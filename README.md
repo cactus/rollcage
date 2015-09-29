@@ -1,0 +1,62 @@
+# rollcage
+
+![status](.tools/alpha.png)
+
+Proof of concept pseudo-reimplementation of [iocage][1] in Go, with intent to
+focus on "thickjails".
+
+[currently implemented commands][3]
+
+## Usage
+
+Create a config file at `/usr/local/etc/rollcage.conf`:
+
+    # zfsroot is the location of the zfs dataset where rollcage lives
+    zfsroot = "tank/iocage"
+
+## Commands
+
+The current list of supported commands is as follows:
+
+    chroot      Chroot into jail, without actually starting the jail itself
+    console     Execute login to have a shell inside the jail.
+    df          List disk space related information
+    exec        Execute login to have a shell inside the jail.
+    get         get list of properties
+    list        List all jails
+    runtime     show runtime configuration of a jail
+    snaplist    snaplist into jail, without actually starting the jail itself
+    version     Print the version
+
+## Building
+
+Currently required to build:
+
+*   a working Go (1.5 recommended) install
+*   [gb][2]
+*   make
+
+Building:
+
+    $ make
+    Available targets:
+      help                this help
+      clean               clean up
+      all                 build binaries and man pages
+      test                run tests
+      cover               run tests with cover output
+      build               build all binaries
+      man                 build all man pages
+
+    $ make build
+    Restoring deps...
+    Building rollcage...
+    ...
+
+    $ bin/rollcage version
+    rollcage no-version (go1.5.1,gc-amd64)
+
+
+[1]: https://github.com/iocage/iocage
+[2]: http://getgb.io
+[3]: https://gist.github.com/cactus/542d14aa96e86355ce7d
