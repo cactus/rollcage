@@ -1,5 +1,7 @@
 # rollcage
 
+[![Build Status](https://travis-ci.org/cactus/rollcage.png?branch=master)](https://travis-ci.org/cactus/rollcage)
+
 ![status](.tools/alpha.png)
 
 Proof of concept pseudo-reimplementation of [iocage][1] in Go, with intent to
