@@ -25,7 +25,7 @@ The current list of supported commands is as follows:
     get         get list of properties
     list        List all jails
     runtime     show runtime configuration of a jail
-    snaplist    snaplist into jail, without actually starting the jail itself
+    snaplist    List all snapshots belonging to jail
     version     Print the version
 
 ## Building
