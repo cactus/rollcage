@@ -34,7 +34,7 @@ Currently required to build:
 
 *   a working Go (1.5 recommended) install
 *   [gb][2]
-*   make
+*   make (bsdmake, not gnu-make)
 
 Building:
 
