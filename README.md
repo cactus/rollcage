@@ -30,7 +30,9 @@ The current list of supported commands is as follows:
     list        List all jails
     runtime     show runtime configuration of a jail
     snaplist    List all snapshots belonging to jail
+    stop        stop jail
     version     Print the version
+
 
 ## Building
 
