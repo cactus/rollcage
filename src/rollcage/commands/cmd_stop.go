@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"os/exec"
 	"path"
 	"strings"
 	"syscall"
@@ -12,13 +13,27 @@ import (
 	"github.com/cactus/gologit"
 )
 
-func umountCmd(environ []string, args ...string) {
-	umountcmd := []string{"/sbin/umount"}
-	umountcmd = append(umountcmd, args...)
-	execErr := syscall.Exec(umountcmd[0], umountcmd, environ)
-	if execErr != nil {
-		gologit.Printf("%s\n", execErr)
+func umountCmd(args ...string) {
+	cmd := exec.Command("/sbin/umount", args...)
+	gologit.Debugln(append([]string{"/sbin/umount"}, args...))
+	out, err := cmd.CombinedOutput()
+	for _, line := range strings.Split(string(out), "\n") {
+		if line != "" {
+			gologit.Debugln(line)
+		}
 	}
+	if err != nil {
+		// some mounts are not present, so just fail
+		// do not log exit status 1 unless debug logging
+		gologit.Debugf("%s\n", err)
+	}
+}
+
+func removeDash(s string) string {
+	if s == "-" {
+		return ""
+	}
+	return s
 }
 
 func stopCmdRun(cmd *cobra.Command, args []string) {
@@ -43,8 +58,8 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 	}
 
 	propertyList := []string{
+		"mountpoint",
 		"org.freebsd.iocage:type",
-		"org.freebsd.iocage:mountpoint",
 		"org.freebsd.iocage:tag",
 		"org.freebsd.iocage:prestop",
 		"org.freebsd.iocage:exec_stop",
@@ -58,58 +73,73 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 		gologit.Fatalf("No output from property fetch\n")
 	}
 
-	//prop_type := lines[0][0]
-	prop_mountpoint := lines[0][1]
-	prop_tag := lines[0][2]
-	prop_prestop := lines[0][3]
-	prop_exec_stop := lines[0][4]
-	prop_poststop := lines[0][5]
-	prop_vnet := lines[0][6]
-	prop_ip4 := lines[0][7]
-
-	fmt.Printf("* Stopping %s (%s)", jailUUID, prop_tag)
+	prop_mountpoint := removeDash(lines[0][0])
+	//prop_type := removeDash(lines[0][1])
+	prop_tag := removeDash(lines[0][2])
+	prop_prestop := removeDash(lines[0][3])
+	prop_exec_stop := removeDash(lines[0][4])
+	prop_poststop := removeDash(lines[0][5])
+	prop_vnet := removeDash(lines[0][6])
+	prop_ip4 := removeDash(lines[0][7])
 
 	// set a default path
 	environ := []string{
 		"PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin",
 	}
 
+	fmt.Printf("* Stopping %s (%s)\n", jailUUID, prop_tag)
+	var execErr error
 	if prop_prestop != "" {
-		fmt.Printf("  + Running pre-stop")
+		fmt.Printf("  + Running pre-stop\n")
 		preStop := core.SplitFieldsQuoteSafe(prop_prestop)
-		execErr := syscall.Exec(preStop[0], preStop, environ)
+		execErr = syscall.Exec(preStop[0], preStop, environ)
 		if execErr != nil {
 			gologit.Printf("%s\n", execErr)
 		}
 	}
 
-	fmt.Printf("  + Stopping services")
+	fmt.Printf("  + Stopping services\n")
 	jexec := []string{"/usr/sbin/jexec"}
 	jexec = append(jexec, fmt.Sprintf("ioc-%s", jailUUID))
 	jexec = append(jexec, core.SplitFieldsQuoteSafe(prop_exec_stop)...)
-	execErr := syscall.Exec(jexec[0], jexec, environ)
-	if execErr != nil {
-		gologit.Printf("%s\n", execErr)
+	out, err := exec.Command(jexec[0], jexec[1:]...).CombinedOutput()
+	gologit.Debugln(string(out))
+	if err != nil {
+		gologit.Printf("%s\n", err)
 	}
 
-	if prop_vnet != "" {
-		fmt.Printf("  + Tearing down VNET")
-		// stop networking
-	} else {
-		if prop_ip4 != "inherit" {
-			// stop legacy net
+	if prop_vnet == "on" {
+		fmt.Printf("  + Tearing down VNET\n")
+		// stop VNET networking
+	} else if prop_ip4 != "inherit" {
+		// stop standard networking (legacy?)
+		lines := core.SplitOutput(core.ZFSMust("list", "-H", "-o", "org.freebsd.iocage:ip4_addr,org.freebsd.iocage:ip6_addr", jailpath))
+		for _, ip_config := range lines[0] {
+			if ip_config == "none" {
+				continue
+			}
+			for _, addr := range strings.Split(ip_config, ",") {
+				item := strings.Split(addr, "|")
+				gologit.Debugln("/sbin/ifconfig", item[0], item[1], "-alias")
+				out, err := exec.Command("/sbin/ifconfig",
+					item[0], item[1], "-alias").CombinedOutput()
+				gologit.Debugln(string(out))
+				if err != nil {
+					gologit.Printf("%s\n", err)
+				}
+			}
 		}
 	}
 
-	fmt.Printf("  + Removing jail process")
+	fmt.Printf("  + Removing jail process\n")
 	jrexec := []string{"/usr/sbin/jail", "-r", fmt.Sprintf("ioc-%s", jailUUID)}
-	execErr = syscall.Exec(jrexec[0], jrexec, environ)
-	if execErr != nil {
-		gologit.Printf("%s\n", execErr)
+	out, err = exec.Command(jrexec[0], jrexec[1:]...).CombinedOutput()
+	if err != nil {
+		gologit.Printf("%s\n", err)
 	}
 
 	if prop_poststop != "" {
-		fmt.Printf("  + Running post-stop")
+		fmt.Printf("  + Running post-stop\n")
 		postStop := core.SplitFieldsQuoteSafe(prop_poststop)
 		execErr := syscall.Exec(postStop[0], postStop, environ)
 		if execErr != nil {
@@ -117,11 +147,11 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	fmt.Printf("  + Tearing down mounts")
-	umountCmd(environ, "-afvF", path.Join(prop_mountpoint, "fstab"))
-	umountCmd(environ, path.Join(prop_mountpoint, "root/dev/fd"))
-	umountCmd(environ, path.Join(prop_mountpoint, "root/dev"))
-	umountCmd(environ, path.Join(prop_mountpoint, "root/proc"))
+	fmt.Printf("  + Tearing down mounts\n")
+	umountCmd("-afvF", path.Join(prop_mountpoint, "fstab"))
+	umountCmd(path.Join(prop_mountpoint, "root/dev/fd"))
+	umountCmd(path.Join(prop_mountpoint, "root/dev"))
+	umountCmd(path.Join(prop_mountpoint, "root/proc"))
 
 	// TODO: basejail here?
 	// TODO: rctl stuff here...
