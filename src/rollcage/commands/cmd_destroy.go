@@ -62,7 +62,7 @@ func destroyCmdRun(cmd *cobra.Command, args []string) {
 
 	if !force {
 		response = strings.ToLower(strings.TrimSpace(response))
-		if len(response) != 1 || response[0] != "y" {
+		if len(response) != 1 || response[0] != 'y' {
 			return
 		}
 	}
