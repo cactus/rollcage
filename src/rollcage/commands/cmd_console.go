@@ -49,7 +49,7 @@ func consoleCmdRun(cmd *cobra.Command, args []string) {
 		"PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin",
 		fmt.Sprintf("TERM=%s", os.Getenv("TERM")),
 	}
-	gologit.Debugf("%s %#s\n", excmd.Path, excmd.Args)
+	gologit.Debugf("%#s\n", excmd.Args)
 	err := excmd.Run()
 	if err != nil {
 		gologit.Fatal(err)
