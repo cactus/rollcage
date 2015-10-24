@@ -3,7 +3,7 @@ package commands
 import (
 	"fmt"
 	"os"
-	"os/exec"
+	"syscall"
 
 	"rollcage/core"
 
@@ -44,15 +44,17 @@ func consoleCmdRun(cmd *cobra.Command, args []string) {
 	jexec = append(jexec, "/usr/sbin/jexec", fmt.Sprintf("ioc-%s", jailUUID), "login")
 	jexec = append(jexec, core.SplitFieldsQuoteSafe(loginFlags)...)
 
-	excmd := exec.Command(jexec[0], jexec[1:]...)
-	excmd.Env = []string{
+	// set a default path
+	environ := []string{
 		"PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin",
-		fmt.Sprintf("TERM=%s", os.Getenv("TERM")),
 	}
-	gologit.Debugf("%#s\n", excmd.Args)
-	err := excmd.Run()
-	if err != nil {
-		gologit.Fatal(err)
+	// set a term from caller
+	environ = append(environ, fmt.Sprintf("TERM=%s", os.Getenv("TERM")))
+
+	gologit.Debugf("%#s\n", jexec)
+	execErr := syscall.Exec(jexec[0], jexec, environ)
+	if execErr != nil {
+		gologit.Fatal(execErr)
 	}
 }
 
