@@ -3,9 +3,9 @@ package commands
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path"
 	"strings"
-	"syscall"
 
 	"rollcage/core"
 
@@ -40,16 +40,15 @@ func chrootCmdRun(cmd *cobra.Command, args []string) {
 		chrootArgs = append(chrootArgs, shell)
 	}
 
-	// set a default path
-	environ := []string{
+	excmd := exec.Command(chrootArgs[0], chrootArgs[1:]...)
+	excmd.Env = []string{
 		"PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin",
+		fmt.Sprintf("TERM=%s", os.Getenv("TERM")),
 	}
-	// set a term from caller
-	environ = append(environ, fmt.Sprintf("TERM=%s", os.Getenv("TERM")))
-
-	execErr := syscall.Exec(chrootArgs[0], chrootArgs, environ)
-	if execErr != nil {
-		gologit.Fatal(execErr)
+	gologit.Debugln("%s %#s\n", excmd.Path, excmd.Args)
+	err := excmd.Run()
+	if err != nil {
+		gologit.Fatal(err)
 	}
 }
 

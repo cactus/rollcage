@@ -5,7 +5,6 @@ import (
 	"os/exec"
 	"path"
 	"strings"
-	"syscall"
 
 	"rollcage/core"
 
@@ -88,13 +87,14 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Printf("* Stopping %s (%s)\n", jailUUID, prop_tag)
-	var execErr error
 	if prop_prestop != "" {
 		fmt.Printf("  + Running pre-stop\n")
 		preStop := core.SplitFieldsQuoteSafe(prop_prestop)
-		execErr = syscall.Exec(preStop[0], preStop, environ)
-		if execErr != nil {
-			gologit.Printf("%s\n", execErr)
+		excmd := exec.Command(preStop[0], preStop[1:]...)
+		excmd.Env = environ
+		err := excmd.Run()
+		if err != nil {
+			gologit.Printf("%s\n", err)
 		}
 	}
 
@@ -141,9 +141,11 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 	if prop_poststop != "" {
 		fmt.Printf("  + Running post-stop\n")
 		postStop := core.SplitFieldsQuoteSafe(prop_poststop)
-		execErr := syscall.Exec(postStop[0], postStop, environ)
-		if execErr != nil {
-			gologit.Printf("%s\n", execErr)
+		excmd := exec.Command(postStop[0], postStop[1:]...)
+		excmd.Env = environ
+		err := excmd.Run()
+		if err != nil {
+			gologit.Printf("%s\n", err)
 		}
 	}
 
