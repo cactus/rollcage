@@ -24,11 +24,13 @@ The current list of supported commands is as follows:
 
     chroot      Chroot into jail, without actually starting the jail itself
     console     Execute login to have a shell inside the jail.
+    destroy     destroy jail
     df          List disk space related information
     exec        Execute login to have a shell inside the jail.
     get         get list of properties
     list        List all jails
     runtime     show runtime configuration of a jail
+    set         Set a property to a given value
     snaplist    List all snapshots belonging to jail
     stop        stop jail
     version     Print the version
