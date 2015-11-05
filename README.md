@@ -33,6 +33,7 @@ The current list of supported commands is as follows:
     set         Set a property to a given value
     snaplist    List all snapshots belonging to jail
     snapremove  Remove snapshots belonging to jail
+    snapshot    Create a zfs snapshot for jail
     stop        stop jail
     version     Print the version
 

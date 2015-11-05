@@ -14,7 +14,7 @@ var snapremoveRegex bool
 func snapremoveCmdRun(cmd *cobra.Command, args []string) {
 	// requires root
 	if !core.IsRoot() {
-		gologit.Fatalf("Must be root to destroy\n")
+		gologit.Fatalf("Must be root to snapremove\n")
 	}
 
 	jailpath := core.GetJailByTagOrUUID(args[0])
@@ -72,7 +72,7 @@ func init() {
 	}
 
 	cmd.Flags().BoolVarP(
-		&snapremoveRegex, "regex", "r", false,
+		&snapremoveRegex, "regex", "x", false,
 		"snapshotname becomes a match regex")
 
 	RootCmd.AddCommand(cmd)

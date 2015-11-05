@@ -36,7 +36,7 @@ func snaplistCmdRun(cmd *cobra.Command, args []string) {
 			continue
 		}
 
-		snapname := strings.Split(line[0], "@")[1]
+		snapname := strings.SplitN(line[0], "@", 2)[1]
 		fmt.Fprintf(wf, "%s\t%s\t%s\t%s\n", snapname, line[1], line[2], line[3])
 	}
 	wf.Flush()
