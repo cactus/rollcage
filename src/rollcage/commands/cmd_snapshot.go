@@ -10,6 +10,8 @@ import (
 	"github.com/cactus/gologit"
 )
 
+var recusiveSnapshot bool
+
 func snapshotCmdRun(cmd *cobra.Command, args []string) {
 	// requires root
 	if !core.IsRoot() {
@@ -29,7 +31,12 @@ func snapshotCmdRun(cmd *cobra.Command, args []string) {
 			"ioc-%s", time.Now().Format("2006-01-02_15:04:05"))
 	}
 
-	core.ZFSMust("snapshot", fmt.Sprintf("%s/root@%s", jailpath, snapname))
+	zfsCmd := []string{"snapshot"}
+	if recusiveSnapshot {
+		zfsCmd = append(zfsCmd, "-r")
+	}
+	zfsCmd = append(zfsCmd, fmt.Sprintf("%s/root@%s", jailpath, snapname))
+	core.ZFSMust(zfsCmd...)
 }
 
 func init() {
@@ -43,6 +50,10 @@ func init() {
 			}
 		},
 	}
+
+	cmd.Flags().BoolVarP(
+		&recusiveSnapshot, "recursive", "r", false,
+		"do a recursive snapshot of the jail root")
 
 	RootCmd.AddCommand(cmd)
 }
