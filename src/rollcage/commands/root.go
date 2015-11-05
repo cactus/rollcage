@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"log"
 	"rollcage/core"
 
 	"github.com/cactus/cobra"
@@ -16,6 +17,12 @@ var RootCmd = &cobra.Command{
 		// set logger debug level and start toggle on signal handler
 		logger := gologit.Logger
 		logger.Set(Verbose)
+		// required to update after setting verbose or gologit overwrites
+		if Verbose {
+			logger.SetFlags(log.Lshortfile)
+		} else {
+			logger.SetFlags(0)
+		}
 		logger.Debugln("Debug logging enabled")
 		if cmd.Name() != "version" {
 			// load config
