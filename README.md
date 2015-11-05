@@ -36,6 +36,7 @@ The current list of supported commands is as follows:
     snapremove  Remove snapshots belonging to jail
     snapshot    Create a zfs snapshot for jail
     stop        stop jail
+    update      update a jail to the latest patchlevel
     version     Print the version
 
 ## Building
