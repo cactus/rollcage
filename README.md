@@ -32,9 +32,9 @@ The current list of supported commands is as follows:
     runtime     show runtime configuration of a jail
     set         Set a property to a given value
     snaplist    List all snapshots belonging to jail
+    snapremove  Remove snapshots belonging to jail
     stop        stop jail
     version     Print the version
-
 
 ## Building
 
