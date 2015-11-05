@@ -24,10 +24,18 @@ func snaplistCmdRun(cmd *cobra.Command, args []string) {
 	zfsArgs = append(zfsArgs, jailpath)
 
 	lines := core.SplitOutput(core.ZFSMust(zfsArgs...))
+	gologit.Debugf("%#v", lines)
+	if len(lines) == 0 || len(lines[0]) == 0 || len(lines[0][0]) == 0 {
+		return
+	}
 
 	outputHeaders := []string{"name", "created", "rsize", "used"}
 	wf := core.NewOutputWriter(outputHeaders, MachineOutput)
 	for _, line := range lines {
+		if len(line) < 4 {
+			continue
+		}
+
 		snapname := strings.Split(line[0], "@")[1]
 		fmt.Fprintf(wf, "%s\t%s\t%s\t%s\n", snapname, line[1], line[2], line[3])
 	}
