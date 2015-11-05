@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"regexp"
 	"rollcage/core"
 	"strings"
@@ -57,7 +58,7 @@ func snapremoveCmdRun(cmd *cobra.Command, args []string) {
 	gologit.Debugf("match list: %#v\n", rmlist)
 
 	for _, snap := range rmlist {
-		gologit.Printf("Removing snapshot: %s", strings.SplitN(snap, "@", 2)[1])
+		fmt.Printf("Removing snapshot: %s\n", strings.SplitN(snap, "@", 2)[1])
 		core.ZFSMust("destroy", "-r", snap)
 	}
 }
