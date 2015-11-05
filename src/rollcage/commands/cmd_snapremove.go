@@ -23,27 +23,32 @@ func snapremoveCmdRun(cmd *cobra.Command, args []string) {
 	}
 
 	matchers := args[1:]
+	gologit.Debugf("matchers: %#v\n", matchers)
 
 	zfsArgs := []string{"list", "-Hrt", "snapshot",
 		"-o", "name", "-d2", jailpath}
 	lines := core.SplitOutput(core.ZFSMust(zfsArgs...))
 
 	rmlist := []string{}
-	for _, l := range lines {
-		line := l[0]
+	for _, line := range lines {
+		if len(line) == 0 || len(line[0]) == 0 {
+			continue
+		}
+		snapname := strings.SplitN(line[0], "@", 2)[1]
+		gologit.Debugf("source snapname: %#v\n", snapname)
 		for _, m := range matchers {
 			if snapremoveRegex {
-				matched, err := regexp.MatchString(m, line)
+				matched, err := regexp.MatchString(m, snapname)
 				if err != nil {
 					gologit.Fatalf("Regex error: %s", err)
 				}
 				if matched {
-					rmlist = append(rmlist, line)
+					rmlist = append(rmlist, line[0])
 					continue
 				}
 			} else {
-				if m == line {
-					rmlist = append(rmlist, line)
+				if m == snapname {
+					rmlist = append(rmlist, line[0])
 					continue
 				}
 			}
@@ -52,7 +57,7 @@ func snapremoveCmdRun(cmd *cobra.Command, args []string) {
 	gologit.Debugf("match list: %#v\n", rmlist)
 
 	for _, snap := range rmlist {
-		gologit.Printf("Removing snapshot: %s", strings.Split(snap, "@")[1])
+		gologit.Printf("Removing snapshot: %s", strings.SplitN(snap, "@", 2)[1])
 		core.ZFSMust("destroy", "-r", snap)
 	}
 }
