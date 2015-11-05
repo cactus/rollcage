@@ -4,11 +4,14 @@ import (
 	"fmt"
 	"strings"
 
+	"regexp"
 	"rollcage/core"
 
 	"github.com/cactus/cobra"
 	"github.com/cactus/gologit"
 )
+
+var snaplistRegex string
 
 func snaplistCmdRun(cmd *cobra.Command, args []string) {
 	jailpath := core.GetJailByTagOrUUID(args[0])
@@ -29,6 +32,15 @@ func snaplistCmdRun(cmd *cobra.Command, args []string) {
 		return
 	}
 
+	var rxmatch *regexp.Regexp
+	var err error
+	if snaplistRegex != "" {
+		rxmatch, err = regexp.Compile(snaplistRegex)
+		if err != nil {
+			gologit.Fatalf("Bad regex: %s", err)
+		}
+	}
+
 	outputHeaders := []string{"name", "created", "rsize", "used"}
 	wf := core.NewOutputWriter(outputHeaders, MachineOutput)
 	for _, line := range lines {
@@ -37,6 +49,10 @@ func snaplistCmdRun(cmd *cobra.Command, args []string) {
 		}
 
 		snapname := strings.SplitN(line[0], "@", 2)[1]
+
+		if rxmatch != nil && !rxmatch.MatchString(snapname) {
+			continue
+		}
 		fmt.Fprintf(wf, "%s\t%s\t%s\t%s\n", snapname, line[1], line[2], line[3])
 	}
 	wf.Flush()
@@ -57,6 +73,9 @@ func init() {
 	cmd.Flags().BoolVarP(
 		&ParsableValues, "parsable-values", "p", false,
 		"output parsable (exact) values")
+
+	cmd.Flags().StringVarP(
+		&snaplistRegex, "regex", "x", "", "filter listed snapshots by regex match")
 
 	RootCmd.AddCommand(cmd)
 }
