@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"bytes"
 	"fmt"
 	"strings"
 
@@ -15,6 +14,15 @@ func listCmdRun(cmd *cobra.Command, args []string) {
 		"org.freebsd.iocage:tag,org.freebsd.iocage:boot"
 	outputHeaders := []string{"jid", "uuid", "tag", "boot", "state"}
 
+	running := strings.TrimSpace(string(core.JlsMust("jid", "name")))
+	jails := make(map[string]string, 0)
+	for _, jinfo := range strings.Split(running, "\n") {
+		jail := strings.Split(jinfo, " ")
+		jid := strings.TrimSpace(jail[0])
+		jname := strings.TrimSpace(jail[1])
+		jails[jname] = jid
+	}
+
 	out := core.ZFSMust("list", "-H", "-o", propertyList, "-d", "1", core.GetJailsPath())
 
 	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
@@ -23,14 +31,15 @@ func listCmdRun(cmd *cobra.Command, args []string) {
 		if strings.HasPrefix(line, "-") {
 			continue
 		}
-		hostUUID := strings.SplitN(line, "\t", 2)[0]
-		jid := core.JlsMust("-j", fmt.Sprintf("ioc-%s", hostUUID), "jid")
+
+		iocid := fmt.Sprintf("ioc-%s", strings.SplitN(line, "\t", 2)[0])
 		state := "up"
-		if string(jid) == "" {
-			jid = []byte("-")
+		jid, ok := jails[iocid]
+		if !ok {
+			jid = "-"
 			state = "down"
 		}
-		fmt.Fprintf(wf, "%s\t%s\t%s\n", bytes.TrimSpace(jid), line, state)
+		fmt.Fprintf(wf, "%s\t%s\t%s\n", jid, line, state)
 	}
 	wf.Flush()
 }
