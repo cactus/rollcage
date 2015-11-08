@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"fmt"
 	"os/exec"
 	"path"
@@ -51,9 +52,12 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 		gologit.Fatalf("No jail found by '%s'\n", args[0])
 	}
 
-	jid := string(core.JlsMust("-j", fmt.Sprintf("ioc-%s", jailUUID), "jid"))
-	if jid == "" {
-		gologit.Fatalf("Jail is not running!\n")
+	out, err := core.Jls("-j", fmt.Sprintf("ioc-%s", jailUUID), "jid")
+	if err != nil {
+		if len(out) == 0 || bytes.Contains(out, []byte("not found")) {
+			gologit.Fatalf("Jail is not running!\n")
+		}
+		gologit.Fatalf("Error: %s\n", err)
 	}
 
 	propertyList := []string{
@@ -102,7 +106,7 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 	jexec := []string{"/usr/sbin/jexec"}
 	jexec = append(jexec, fmt.Sprintf("ioc-%s", jailUUID))
 	jexec = append(jexec, core.SplitFieldsQuoteSafe(prop_exec_stop)...)
-	out, err := exec.Command(jexec[0], jexec[1:]...).CombinedOutput()
+	out, err = exec.Command(jexec[0], jexec[1:]...).CombinedOutput()
 	gologit.Debugln(string(out))
 	if err != nil {
 		gologit.Printf("%s\n", err)
