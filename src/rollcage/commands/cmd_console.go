@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"syscall"
@@ -22,9 +23,12 @@ func consoleCmdRun(cmd *cobra.Command, args []string) {
 		gologit.Fatalf("No jail found by '%s'\n", args[0])
 	}
 
-	jid := string(core.JlsMust("-j", fmt.Sprintf("ioc-%s", jailUUID), "jid"))
-	if jid == "" {
-		gologit.Fatalf("Jail is not running!\n")
+	out, err := core.Jls("-j", fmt.Sprintf("ioc-%s", jailUUID), "jid")
+	if err != nil {
+		if len(out) == 0 || bytes.Contains(out, []byte("not found")) {
+			gologit.Fatalf("Jail is not running!\n")
+		}
+		gologit.Fatalf("Error: %s\n", err)
 	}
 
 	jailpath := core.GetJailByTagOrUUID(args[0])

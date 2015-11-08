@@ -18,6 +18,9 @@ func listCmdRun(cmd *cobra.Command, args []string) {
 	jails := make(map[string]string, 0)
 	for _, jinfo := range strings.Split(running, "\n") {
 		jail := strings.Split(jinfo, " ")
+		if len(jail) < 2 {
+			continue
+		}
 		jid := strings.TrimSpace(jail[0])
 		jname := strings.TrimSpace(jail[1])
 		jails[jname] = jid
