@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"strings"
@@ -19,18 +20,23 @@ func destroyCmdRun(cmd *cobra.Command, args []string) {
 		gologit.Fatalf("Must be root to destroy\n")
 	}
 
-	jailUUID := core.GetJailUUIDByTagOrUUID(args[0])
-	if jailUUID == "" {
-		gologit.Fatalf("No jail found by '%s'\n", args[0])
+	var jailpath, jailUUID string
+	for _, line := range core.SplitOutput(core.ZFSMust(
+		"list", "-H", "-d", "1",
+		"-o", "name,org.freebsd.iocage:host_hostuuid,org.freebsd.iocage:tag",
+		core.GetJailsPath())) {
+		if line[2] == args[0] || strings.HasPrefix(line[1], args[0]) {
+			jailpath = line[0]
+			jailUUID = line[1]
+			break
+		}
 	}
-
-	jailpath := core.GetJailByTagOrUUID(jailUUID)
 	if jailpath == "" {
-		gologit.Fatalf("No jail found by '%s'\n", args[0])
+		gologit.Fatalf("Jail '%s' not found!\n", args[0])
 	}
 
-	jid := string(core.JlsMust("-j", fmt.Sprintf("ioc-%s", jailUUID), "jid"))
-	if jid != "" {
+	out, err := core.Jls("-j", fmt.Sprintf("ioc-%s", jailUUID), "jid")
+	if err == nil && !bytes.Contains(out, []byte("not found")) {
 		gologit.Fatalf("Jail is running. Shutdown first.\n")
 	}
 
@@ -55,7 +61,7 @@ func destroyCmdRun(cmd *cobra.Command, args []string) {
 
 	fmt.Print("Are you sure [yN]? :")
 	var response string
-	_, err := fmt.Scanln(&response)
+	_, err = fmt.Scanln(&response)
 	if err != nil {
 		gologit.Fatalf("%s", err)
 	}
