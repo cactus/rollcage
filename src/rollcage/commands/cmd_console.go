@@ -18,12 +18,12 @@ func consoleCmdRun(cmd *cobra.Command, args []string) {
 		gologit.Fatalf("Must be root to use console\n")
 	}
 
-	jailUUID := core.GetJailUUIDByTagOrUUID(args[0])
-	if jailUUID == "" {
+	jail, err := core.FindJail(args[0])
+	if err != nil {
 		gologit.Fatalf("No jail found by '%s'\n", args[0])
 	}
 
-	out, err := core.Jls("-j", fmt.Sprintf("ioc-%s", jailUUID), "jid")
+	out, err := core.Jls("-j", fmt.Sprintf("ioc-%s", jail.HostUUID), "jid")
 	if err != nil {
 		if len(out) == 0 || bytes.Contains(out, []byte("not found")) {
 			gologit.Fatalf("Jail is not running!\n")
@@ -31,13 +31,8 @@ func consoleCmdRun(cmd *cobra.Command, args []string) {
 		gologit.Fatalf("Error: %s\n", err)
 	}
 
-	jailpath := core.GetJailByTagOrUUID(args[0])
-	if jailpath == "" {
-		gologit.Fatalf("No jail found by '%s'\n", args[0])
-	}
-
 	// get exec fib property
-	lines := core.SplitOutput(core.ZFSMust("list", "-H", "-o", "org.freebsd.iocage:login_flags,org.freebsd.iocage:exec_fib", jailpath))
+	lines := core.SplitOutput(core.ZFSMust("list", "-H", "-o", "org.freebsd.iocage:login_flags,org.freebsd.iocage:exec_fib", jail.Path))
 	loginFlags := lines[0][0]
 	execFib := lines[0][1]
 
@@ -45,7 +40,7 @@ func consoleCmdRun(cmd *cobra.Command, args []string) {
 	if execFib != "0" {
 		jexec = append(jexec, "/usr/sbin/setfib", execFib)
 	}
-	jexec = append(jexec, "/usr/sbin/jexec", fmt.Sprintf("ioc-%s", jailUUID), "login")
+	jexec = append(jexec, "/usr/sbin/jexec", fmt.Sprintf("ioc-%s", jail.HostUUID), "login")
 	jexec = append(jexec, core.SplitFieldsQuoteSafe(loginFlags)...)
 
 	// set a default path

@@ -14,8 +14,8 @@ import (
 var snaplistRegex string
 
 func snaplistCmdRun(cmd *cobra.Command, args []string) {
-	jailpath := core.GetJailByTagOrUUID(args[0])
-	if jailpath == "" {
+	jail, err := core.FindJail(args[0])
+	if err != nil {
 		gologit.Fatalf("No jail found by '%s'\n", args[0])
 	}
 
@@ -24,7 +24,7 @@ func snaplistCmdRun(cmd *cobra.Command, args []string) {
 	if ParsableValues {
 		zfsArgs = append(zfsArgs, "-p")
 	}
-	zfsArgs = append(zfsArgs, jailpath)
+	zfsArgs = append(zfsArgs, jail.Path)
 
 	lines := core.SplitOutput(core.ZFSMust(zfsArgs...))
 	gologit.Debugf("%#v", lines)
@@ -33,7 +33,6 @@ func snaplistCmdRun(cmd *cobra.Command, args []string) {
 	}
 
 	var rxmatch *regexp.Regexp
-	var err error
 	if snaplistRegex != "" {
 		rxmatch, err = regexp.Compile(snaplistRegex)
 		if err != nil {

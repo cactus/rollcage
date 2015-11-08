@@ -20,22 +20,12 @@ func destroyCmdRun(cmd *cobra.Command, args []string) {
 		gologit.Fatalf("Must be root to destroy\n")
 	}
 
-	var jailpath, jailUUID string
-	for _, line := range core.SplitOutput(core.ZFSMust(
-		"list", "-H", "-d", "1",
-		"-o", "name,org.freebsd.iocage:host_hostuuid,org.freebsd.iocage:tag",
-		core.GetJailsPath())) {
-		if line[2] == args[0] || strings.HasPrefix(line[1], args[0]) {
-			jailpath = line[0]
-			jailUUID = line[1]
-			break
-		}
-	}
-	if jailpath == "" {
+	jail, err := core.FindJail(args[0])
+	if err != nil {
 		gologit.Fatalf("Jail '%s' not found!\n", args[0])
 	}
 
-	out, err := core.Jls("-j", fmt.Sprintf("ioc-%s", jailUUID), "jid")
+	out, err := core.Jls("-j", fmt.Sprintf("ioc-%s", jail.HostUUID), "jid")
 	if err == nil && !bytes.Contains(out, []byte("not found")) {
 		gologit.Fatalf("Jail is running. Shutdown first.\n")
 	}
@@ -46,7 +36,7 @@ func destroyCmdRun(cmd *cobra.Command, args []string) {
 		"org.freebsd.iocage:tag",
 	}
 
-	lines := core.SplitOutput(core.ZFSMust("list", "-H", "-o", strings.Join(propertyList, ","), jailpath))
+	lines := core.SplitOutput(core.ZFSMust("list", "-H", "-o", strings.Join(propertyList, ","), jail.Path))
 	if len(lines) < 1 {
 		gologit.Fatalf("No output from property fetch\n")
 	}
@@ -73,8 +63,8 @@ func destroyCmdRun(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	fmt.Printf("Destroying: %s (%s)\n", jailUUID, prop_tag)
-	core.ZFSMust("destroy", "-fr", jailpath)
+	fmt.Printf("Destroying: %s (%s)\n", jail.HostUUID, prop_tag)
+	core.ZFSMust("destroy", "-fr", jail.Path)
 	os.RemoveAll(prop_mountpoint)
 }
 

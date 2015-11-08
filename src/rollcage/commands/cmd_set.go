@@ -50,8 +50,8 @@ func setCmdRun(cmd *cobra.Command, args []string) {
 		gologit.Fatalln("Improper usage")
 	}
 
-	jailpath := core.GetJailByTagOrUUID(args[0])
-	if jailpath == "" {
+	jail, err := core.FindJail(args[0])
+	if err != nil {
 		gologit.Fatalf("No jail found by '%s'\n", args[0])
 	}
 
@@ -68,7 +68,7 @@ func setCmdRun(cmd *cobra.Command, args []string) {
 		zfsArgs := []string{
 			"set",
 			fmt.Sprintf("%s%s=%s", prefix, prop[0], prop[1]),
-			jailpath,
+			jail.Path,
 		}
 		gologit.Debugln(zfsArgs)
 		core.ZFSMust(zfsArgs...)

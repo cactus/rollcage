@@ -18,8 +18,8 @@ func snapshotCmdRun(cmd *cobra.Command, args []string) {
 		gologit.Fatalf("Must be root to snapshot\n")
 	}
 
-	jailpath := core.GetJailByTagOrUUID(args[0])
-	if jailpath == "" {
+	jail, err := core.FindJail(args[0])
+	if err != nil {
 		gologit.Fatalf("No jail found by '%s'\n", args[0])
 	}
 
@@ -35,7 +35,7 @@ func snapshotCmdRun(cmd *cobra.Command, args []string) {
 	if recusiveSnapshot {
 		zfsCmd = append(zfsCmd, "-r")
 	}
-	zfsCmd = append(zfsCmd, fmt.Sprintf("%s/root@%s", jailpath, snapname))
+	zfsCmd = append(zfsCmd, fmt.Sprintf("%s/root@%s", jail.Path, snapname))
 	core.ZFSMust(zfsCmd...)
 }
 

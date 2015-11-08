@@ -42,17 +42,12 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 		gologit.Fatalf("Must be root to stop\n")
 	}
 
-	jailUUID := core.GetJailUUIDByTagOrUUID(args[0])
-	if jailUUID == "" {
+	jail, err := core.FindJail(args[0])
+	if err != nil {
 		gologit.Fatalf("No jail found by '%s'\n", args[0])
 	}
 
-	jailpath := core.GetJailByTagOrUUID(jailUUID)
-	if jailpath == "" {
-		gologit.Fatalf("No jail found by '%s'\n", args[0])
-	}
-
-	out, err := core.Jls("-j", fmt.Sprintf("ioc-%s", jailUUID), "jid")
+	out, err := core.Jls("-j", fmt.Sprintf("ioc-%s", jail.HostUUID), "jid")
 	if err != nil {
 		if len(out) == 0 || bytes.Contains(out, []byte("not found")) {
 			gologit.Fatalf("Jail is not running!\n")
@@ -71,7 +66,7 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 		"org.freebsd.iocage:ip4",
 	}
 
-	lines := core.SplitOutput(core.ZFSMust("list", "-H", "-o", strings.Join(propertyList, ","), jailpath))
+	lines := core.SplitOutput(core.ZFSMust("list", "-H", "-o", strings.Join(propertyList, ","), jail.Path))
 	if len(lines) < 1 {
 		gologit.Fatalf("No output from property fetch\n")
 	}
@@ -90,7 +85,7 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 		"PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin",
 	}
 
-	fmt.Printf("* Stopping %s (%s)\n", jailUUID, prop_tag)
+	fmt.Printf("* Stopping %s (%s)\n", jail.HostUUID, prop_tag)
 	if prop_prestop != "" {
 		fmt.Printf("  + Running pre-stop\n")
 		preStop := core.SplitFieldsQuoteSafe(prop_prestop)
@@ -104,7 +99,7 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 
 	fmt.Printf("  + Stopping services\n")
 	jexec := []string{"/usr/sbin/jexec"}
-	jexec = append(jexec, fmt.Sprintf("ioc-%s", jailUUID))
+	jexec = append(jexec, fmt.Sprintf("ioc-%s", jail.HostUUID))
 	jexec = append(jexec, core.SplitFieldsQuoteSafe(prop_exec_stop)...)
 	out, err = exec.Command(jexec[0], jexec[1:]...).CombinedOutput()
 	gologit.Debugln(string(out))
@@ -117,7 +112,7 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 		// stop VNET networking
 	} else if prop_ip4 != "inherit" {
 		// stop standard networking (legacy?)
-		lines := core.SplitOutput(core.ZFSMust("list", "-H", "-o", "org.freebsd.iocage:ip4_addr,org.freebsd.iocage:ip6_addr", jailpath))
+		lines := core.SplitOutput(core.ZFSMust("list", "-H", "-o", "org.freebsd.iocage:ip4_addr,org.freebsd.iocage:ip6_addr", jail.Path))
 		for _, ip_config := range lines[0] {
 			if ip_config == "none" {
 				continue
@@ -136,7 +131,7 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Printf("  + Removing jail process\n")
-	jrexec := []string{"/usr/sbin/jail", "-r", fmt.Sprintf("ioc-%s", jailUUID)}
+	jrexec := []string{"/usr/sbin/jail", "-r", fmt.Sprintf("ioc-%s", jail.HostUUID)}
 	out, err = exec.Command(jrexec[0], jrexec[1:]...).CombinedOutput()
 	if err != nil {
 		gologit.Printf("%s\n", err)

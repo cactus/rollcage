@@ -13,12 +13,12 @@ import (
 )
 
 func runtimeCmdRun(cmd *cobra.Command, args []string) {
-	jailid := core.GetJailUUIDByTagOrUUID(args[0])
-	if jailid == "" {
+	jail, err := core.FindJail(args[0])
+	if err != nil {
 		gologit.Fatalf("No jail found by '%s'\n", args[0])
 	}
 
-	out, err := core.Jls("-n", "-j", fmt.Sprintf("ioc-%s", jailid))
+	out, err := core.Jls("-n", "-j", fmt.Sprintf("ioc-%s", jail.HostUUID))
 	if err != nil {
 		if len(out) == 0 || bytes.Contains(out, []byte("not found")) {
 			gologit.Fatalf("Jail is not running!\n")

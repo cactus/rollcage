@@ -21,14 +21,14 @@ func updateCmdRun(cmd *cobra.Command, args []string) {
 		gologit.Fatalf("Must be root to snapremove\n")
 	}
 
-	jailpath := core.GetJailByTagOrUUID(args[0])
-	if jailpath == "" {
+	jail, err := core.FindJail(args[0])
+	if err != nil {
 		gologit.Fatalf("No jail found by '%s'\n", args[0])
 	}
 
 	zfsArgs := []string{
 		"get", "-Ho", "value", "org.freebsd.iocage:release,mountpoint",
-		jailpath}
+		jail.Path}
 	out := strings.Split(
 		strings.TrimSpace(string(core.ZFSMust(zfsArgs...))), "\n")
 	release := out[0]
@@ -50,7 +50,7 @@ func updateCmdRun(cmd *cobra.Command, args []string) {
 	fmt.Println("* Creating back out snapshot")
 	snappath := fmt.Sprintf(
 		"%s/root@%s",
-		jailpath,
+		jail.Path,
 		fmt.Sprintf(
 			"ioc-update-%s",
 			time.Now().Format("2006-01-02_15:04:05")))

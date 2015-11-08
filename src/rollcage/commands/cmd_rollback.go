@@ -16,8 +16,8 @@ func rollbackCmdRun(cmd *cobra.Command, args []string) {
 		gologit.Fatalf("Must be root to rollback\n")
 	}
 
-	jailpath := core.GetJailByTagOrUUID(args[0])
-	if jailpath == "" {
+	jail, err := core.FindJail(args[0])
+	if err != nil {
 		gologit.Fatalf("No jail found by '%s'\n", args[0])
 	}
 
@@ -25,7 +25,7 @@ func rollbackCmdRun(cmd *cobra.Command, args []string) {
 
 	// get FS's
 	lines := core.SplitOutput(
-		core.ZFSMust("list", "-Hr", "-o", "name", path.Join(jailpath, "root")))
+		core.ZFSMust("list", "-Hr", "-o", "name", path.Join(jail.Path, "root")))
 	if len(lines) < 1 {
 		gologit.Fatalf("No datasets at jailpath!\n")
 	}

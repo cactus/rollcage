@@ -23,11 +23,11 @@ func dfCmdRun(cmd *cobra.Command, args []string) {
 	if len(args) == 0 {
 		zfsArgs = append(zfsArgs, "-d", "1", core.GetJailsPath())
 	} else {
-		jailpath := core.GetJailByTagOrUUID(args[0])
-		if jailpath == "" {
+		jail, err := core.FindJail(args[0])
+		if err != nil {
 			gologit.Fatalf("No jail found by '%s'\n", args[0])
 		}
-		zfsArgs = append(zfsArgs, jailpath)
+		zfsArgs = append(zfsArgs, jail.Path)
 	}
 	out := core.ZFSMust(zfsArgs...)
 	lines := strings.Split(strings.TrimSpace(string(out)), "\n")

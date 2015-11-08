@@ -18,8 +18,8 @@ func snapremoveCmdRun(cmd *cobra.Command, args []string) {
 		gologit.Fatalf("Must be root to snapremove\n")
 	}
 
-	jailpath := core.GetJailByTagOrUUID(args[0])
-	if jailpath == "" {
+	jail, err := core.FindJail(args[0])
+	if err != nil {
 		gologit.Fatalf("No jail found by '%s'\n", args[0])
 	}
 
@@ -27,7 +27,7 @@ func snapremoveCmdRun(cmd *cobra.Command, args []string) {
 	gologit.Debugf("matchers: %#v\n", matchers)
 
 	zfsArgs := []string{"list", "-Hrt", "snapshot",
-		"-o", "name", "-d2", jailpath}
+		"-o", "name", "-d2", jail.Path}
 	lines := core.SplitOutput(core.ZFSMust(zfsArgs...))
 
 	rmlist := []string{}

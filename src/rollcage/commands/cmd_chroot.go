@@ -19,11 +19,11 @@ func chrootCmdRun(cmd *cobra.Command, args []string) {
 		gologit.Fatalf("Must be root to chroot\n")
 	}
 
-	jailpath := core.GetJailByTagOrUUID(args[0])
-	if jailpath == "" {
+	jail, err := core.FindJail(args[0])
+	if err != nil {
 		gologit.Fatalf("No jail found by '%s'\n", args[0])
 	}
-	propertyOut := core.ZFSMust("get", "-H", "-o", "value", "mountpoint", jailpath)
+	propertyOut := core.ZFSMust("get", "-H", "-o", "value", "mountpoint", jail.Path)
 
 	chrootArgs := []string{
 		"/usr/sbin/chroot",

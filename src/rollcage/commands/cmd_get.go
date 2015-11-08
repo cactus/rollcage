@@ -26,15 +26,15 @@ func getCmdRun(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	var jails []string
+	var jails []*core.JailMeta
 	if len(args) < 2 {
 		jails = core.GetAllJails()
 	} else {
-		jailpath := core.GetJailByTagOrUUID(args[1])
-		if jailpath == "" {
+		jail, err := core.FindJail(args[1])
+		if err != nil {
 			gologit.Fatalf("No jail found by '%s'\n", args[1])
 		}
-		jails = append(jails, jailpath)
+		jails = append(jails, jail)
 	}
 
 	twf := core.NewTemplateOutputWriter(headers, MachineOutput)
@@ -43,11 +43,9 @@ func getCmdRun(cmd *cobra.Command, args []string) {
 		if ParsableValues {
 			zfsArgs = append(zfsArgs, "-p")
 		}
-		zfsArgs = append(zfsArgs, "all", jail)
+		zfsArgs = append(zfsArgs, "all", jail.Path)
 		out := core.ZFSMust(zfsArgs...)
 
-		var uuid string
-		var tag string
 		properties := make([][]string, 0)
 		for _, line := range strings.Split(string(out), "\n") {
 			if line == "" {
@@ -59,11 +57,9 @@ func getCmdRun(cmd *cobra.Command, args []string) {
 				property = strings.Split(property, ":")[1]
 			}
 			if property == "tag" {
-				tag = cols[2]
 				continue
 			}
 			if property == "host_hostuuid" {
-				uuid = cols[2]
 				continue
 			}
 			if allTags || desiredTags[property] {
@@ -77,8 +73,8 @@ func getCmdRun(cmd *cobra.Command, args []string) {
 				Property string
 				Value    string
 			}{
-				Uuid:     uuid,
-				Tag:      tag,
+				Uuid:     jail.HostUUID,
+				Tag:      jail.Tag,
 				Property: prop[0],
 				Value:    prop[1],
 			})
