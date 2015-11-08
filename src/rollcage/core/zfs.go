@@ -1,6 +1,7 @@
 package core
 
 import (
+	"bytes"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -14,28 +15,31 @@ type JailMeta struct {
 	Tag      string
 }
 
-func GetJailId(hostUUID string) ([]byte, error) {
-	cmd := exec.Command("/usr/sbin/jls", "-j",
-		fmt.Sprintf("ioc-%s", hostUUID), "jid")
-	gologit.Debugln(cmd.Args)
-	out, err := cmd.CombinedOutput()
-	return out, err
+// return whether the jail is running or not
+func (jail *JailMeta) IsRunning() bool {
+	if jail.GetJID() == "" {
+		return false
+	}
+	return true
 }
 
-func Jls(arg ...string) ([]byte, error) {
-	cmd := exec.Command("/usr/sbin/jls", arg...)
-	gologit.Debugln(cmd.Args)
-	out, err := cmd.CombinedOutput()
-	return out, err
-}
-
-func JlsMust(arg ...string) []byte {
-	return CmdErrExit(Jls(arg...))
+// return jls jail id for a given jail
+// returns emptry string if jail is not running
+func (jail *JailMeta) GetJID() string {
+	out, err := Jls("-j", fmt.Sprintf("ioc-%s", jail.HostUUID), "jid")
+	if err != nil {
+		return ""
+	}
+	return string(out)
 }
 
 func GetAllJails() []*JailMeta {
 	list := make([]*JailMeta, 0)
-	out := ZFSMust("list", "-H", "-o", "name,org.freebsd.iocage:host_hostuuid,org.freebsd.iocage:tag", "-d", "1", GetJailsPath())
+	out := ZFSMust(
+		fmt.Errorf("No jails found"),
+		"list", "-H",
+		"-o", "name,org.freebsd.iocage:host_hostuuid,org.freebsd.iocage:tag",
+		"-d", "1", GetJailsPath())
 	lines := SplitOutput(out)
 	// discard first line, as that is the jail dir itself
 	for _, line := range lines[1:] {
@@ -69,27 +73,37 @@ func FindJail(lookup string) (*JailMeta, error) {
 	return nil, fmt.Errorf("No jail found")
 }
 
-func ZFS(arg ...string) ([]byte, error) {
-	cmd := exec.Command("/sbin/zfs", arg...)
-	gologit.Debugln(cmd.Args)
-	out, err := cmd.CombinedOutput()
-	return out, err
+func ZFS(arg ...string) (string, error) {
+	return Cmd("/sbin/zfs", arg...)
 }
 
-func ZFSMust(arg ...string) []byte {
-	return CmdErrExit(ZFS(arg...))
+func ZFSMust(errmsg error, arg ...string) string {
+	return CmdMust(errmsg, "/sbin/zfs", arg...)
 }
 
-func CmdMust(out []byte, err error) []byte {
-	return CmdErrExit(out, err)
+func Jls(arg ...string) (string, error) {
+	return Cmd("/usr/sbin/jls", arg...)
 }
 
-func CmdErrExit(out []byte, err error) []byte {
+func JlsMust(errmsg error, arg ...string) string {
+	return CmdMust(errmsg, "/usr/sbin/jls", arg...)
+}
+
+func Cmd(name string, arg ...string) (string, error) {
+	cmd := exec.Command(name, arg...)
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	err := cmd.Run()
+	gologit.Debugf("cmd: %s\nstdout: %s\nstderr: %s", cmd.Args, stdout, stderr)
+	return strings.TrimSpace(stdout.String()), err
+}
+
+func CmdMust(errmsg error, name string, arg ...string) string {
+	out, err := Cmd(name, arg...)
 	if err != nil {
-		if out != nil {
-			gologit.Println(strings.TrimSpace(string(out)))
-		}
-		gologit.Fatal(err)
+		gologit.Fatalf("Error: %s\n", errmsg)
 	}
 	return out
 }

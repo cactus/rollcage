@@ -26,7 +26,9 @@ func snaplistCmdRun(cmd *cobra.Command, args []string) {
 	}
 	zfsArgs = append(zfsArgs, jail.Path)
 
-	lines := core.SplitOutput(core.ZFSMust(zfsArgs...))
+	lines := core.SplitOutput(core.ZFSMust(
+		fmt.Errorf("Error listing snapshots"),
+		zfsArgs...))
 	gologit.Debugf("%#v", lines)
 	if len(lines) == 0 || len(lines[0]) == 0 || len(lines[0][0]) == 0 {
 		return

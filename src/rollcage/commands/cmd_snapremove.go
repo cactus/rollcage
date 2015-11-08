@@ -28,7 +28,9 @@ func snapremoveCmdRun(cmd *cobra.Command, args []string) {
 
 	zfsArgs := []string{"list", "-Hrt", "snapshot",
 		"-o", "name", "-d2", jail.Path}
-	lines := core.SplitOutput(core.ZFSMust(zfsArgs...))
+	lines := core.SplitOutput(core.ZFSMust(
+		fmt.Errorf("Error listing snapshots"),
+		zfsArgs...))
 
 	rmlist := []string{}
 	for _, line := range lines {
@@ -59,7 +61,9 @@ func snapremoveCmdRun(cmd *cobra.Command, args []string) {
 
 	for _, snap := range rmlist {
 		fmt.Printf("Removing snapshot: %s\n", strings.SplitN(snap, "@", 2)[1])
-		core.ZFSMust("destroy", "-r", snap)
+		core.ZFSMust(
+			fmt.Errorf("Error removing snapshot"),
+			"destroy", "-r", snap)
 	}
 }
 

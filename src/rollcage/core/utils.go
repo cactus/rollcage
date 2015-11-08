@@ -1,7 +1,6 @@
 package core
 
 import (
-	"bytes"
 	"os/user"
 	"strings"
 	"unicode"
@@ -29,9 +28,9 @@ func StringInSlice(haystack []string, needle string) bool {
 	return false
 }
 
-func SplitOutput(output []byte) [][]string {
+func SplitOutput(output string) [][]string {
 	splitlines := make([][]string, 0)
-	lines := strings.Split(string(bytes.TrimSpace(output)), "\n")
+	lines := strings.Split(strings.TrimSpace(output), "\n")
 	for _, line := range lines {
 		splitlines = append(splitlines, strings.Split(line, "\t"))
 	}

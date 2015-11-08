@@ -29,8 +29,8 @@ func dfCmdRun(cmd *cobra.Command, args []string) {
 		}
 		zfsArgs = append(zfsArgs, jail.Path)
 	}
-	out := core.ZFSMust(zfsArgs...)
-	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+	out := core.ZFSMust(fmt.Errorf("Error listing jails"), zfsArgs...)
+	lines := strings.Split(out, "\n")
 	wf := core.NewOutputWriter(outputHeaders, MachineOutput)
 	for _, line := range lines {
 		if strings.HasPrefix(line, "-") {

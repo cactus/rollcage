@@ -24,18 +24,21 @@ func rollbackCmdRun(cmd *cobra.Command, args []string) {
 	snapname := strings.TrimLeft(args[1], "@")
 
 	// get FS's
-	lines := core.SplitOutput(
-		core.ZFSMust("list", "-Hr", "-o", "name", path.Join(jail.Path, "root")))
+	lines := core.SplitOutput(core.ZFSMust(
+		fmt.Errorf("Error listing jails"),
+		"list", "-Hr", "-o", "name", path.Join(jail.Path, "root")))
 	if len(lines) < 1 {
 		gologit.Fatalf("No datasets at jailpath!\n")
 	}
 
 	snapshots := []string{}
 	for _, line := range lines {
-		out := core.ZFSMust("list", "-Ht", "snapshot", "-o", "name", "-d1",
+		out := core.ZFSMust(
+			fmt.Errorf("Error listing snapshots"),
+			"list", "-Ht", "snapshot", "-o", "name", "-d1",
 			fmt.Sprintf("%s@%s", line[0], snapname))
 		if len(out) != 0 {
-			snapshots = append(snapshots, strings.TrimSpace(string(out)))
+			snapshots = append(snapshots, out)
 		}
 	}
 
@@ -50,7 +53,9 @@ func rollbackCmdRun(cmd *cobra.Command, args []string) {
 		elemName = elemName[j:]
 		fmt.Printf("* Rolling back jail dataset '%s' to '@%s'\n",
 			elemName, snapname)
-		core.ZFSMust("rollback", "-r", snapshot)
+		core.ZFSMust(
+			fmt.Errorf("Error rolling back jail"),
+			"rollback", "-r", snapshot)
 	}
 }
 

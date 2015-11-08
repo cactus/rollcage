@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"strings"
 	"syscall"
 
 	"rollcage/core"
@@ -23,11 +22,13 @@ func chrootCmdRun(cmd *cobra.Command, args []string) {
 	if err != nil {
 		gologit.Fatalf("No jail found by '%s'\n", args[0])
 	}
-	propertyOut := core.ZFSMust("get", "-H", "-o", "value", "mountpoint", jail.Path)
+	propertyOut := core.ZFSMust(
+		fmt.Errorf("Error getting properties"),
+		"get", "-H", "-o", "value", "mountpoint", jail.Path)
 
 	chrootArgs := []string{
 		"/usr/sbin/chroot",
-		path.Join(strings.TrimSpace(string(propertyOut)), "root"),
+		path.Join(propertyOut, "root"),
 	}
 
 	if len(args) > 1 {

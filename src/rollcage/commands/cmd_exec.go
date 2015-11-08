@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"syscall"
@@ -23,13 +22,16 @@ func execCmdRun(cmd *cobra.Command, args []string) {
 		gologit.Fatalf("No jail found by '%s'\n", args[0])
 	}
 
-	out, err := core.Jls("-j", fmt.Sprintf("ioc-%s", jail.HostUUID), "jid")
-	if err != nil || bytes.Contains(out, []byte("not found")) {
+	if !jail.IsRunning() {
 		gologit.Fatalf("Jail is not running!\n")
 	}
 
 	// get exec fib property
-	lines := core.SplitOutput(core.ZFSMust("list", "-H", "-o", "org.freebsd.iocage:login_flags,org.freebsd.iocage:exec_fib", jail.Path))
+	lines := core.SplitOutput(core.ZFSMust(
+		fmt.Errorf("Error listing jails"),
+		"list", "-H",
+		"-o", "org.freebsd.iocage:login_flags,org.freebsd.iocage:exec_fib",
+		jail.Path))
 	execFib := lines[0][1]
 
 	jexec := []string{}

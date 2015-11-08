@@ -14,7 +14,9 @@ func listCmdRun(cmd *cobra.Command, args []string) {
 		"org.freebsd.iocage:tag,org.freebsd.iocage:boot"
 	outputHeaders := []string{"jid", "uuid", "tag", "boot", "state"}
 
-	running := strings.TrimSpace(string(core.JlsMust("jid", "name")))
+	running := core.JlsMust(
+		fmt.Errorf("Error getting jls data"),
+		"jid", "name")
 	jails := make(map[string]string, 0)
 	for _, jinfo := range strings.Split(running, "\n") {
 		jail := strings.Split(jinfo, " ")
@@ -26,9 +28,11 @@ func listCmdRun(cmd *cobra.Command, args []string) {
 		jails[jname] = jid
 	}
 
-	out := core.ZFSMust("list", "-H", "-o", propertyList, "-d", "1", core.GetJailsPath())
+	out := core.ZFSMust(
+		fmt.Errorf("Error listing jails"),
+		"list", "-H", "-o", propertyList, "-d", "1", core.GetJailsPath())
 
-	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
+	lines := strings.Split(out, "\n")
 	wf := core.NewOutputWriter(outputHeaders, MachineOutput)
 	for _, line := range lines {
 		if strings.HasPrefix(line, "-") {

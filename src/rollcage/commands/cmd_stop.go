@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"bytes"
 	"fmt"
 	"os/exec"
 	"path"
@@ -47,12 +46,8 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 		gologit.Fatalf("No jail found by '%s'\n", args[0])
 	}
 
-	out, err := core.Jls("-j", fmt.Sprintf("ioc-%s", jail.HostUUID), "jid")
-	if err != nil {
-		if len(out) == 0 || bytes.Contains(out, []byte("not found")) {
-			gologit.Fatalf("Jail is not running!\n")
-		}
-		gologit.Fatalf("Error: %s\n", err)
+	if !jail.IsRunning() {
+		gologit.Fatalf("Jail is not running!\n")
 	}
 
 	propertyList := []string{
@@ -66,7 +61,9 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 		"org.freebsd.iocage:ip4",
 	}
 
-	lines := core.SplitOutput(core.ZFSMust("list", "-H", "-o", strings.Join(propertyList, ","), jail.Path))
+	lines := core.SplitOutput(core.ZFSMust(
+		fmt.Errorf("Error listing properties"),
+		"list", "-H", "-o", strings.Join(propertyList, ","), jail.Path))
 	if len(lines) < 1 {
 		gologit.Fatalf("No output from property fetch\n")
 	}
@@ -101,7 +98,7 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 	jexec := []string{"/usr/sbin/jexec"}
 	jexec = append(jexec, fmt.Sprintf("ioc-%s", jail.HostUUID))
 	jexec = append(jexec, core.SplitFieldsQuoteSafe(prop_exec_stop)...)
-	out, err = exec.Command(jexec[0], jexec[1:]...).CombinedOutput()
+	out, err := exec.Command(jexec[0], jexec[1:]...).CombinedOutput()
 	gologit.Debugln(string(out))
 	if err != nil {
 		gologit.Printf("%s\n", err)
@@ -112,7 +109,9 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 		// stop VNET networking
 	} else if prop_ip4 != "inherit" {
 		// stop standard networking (legacy?)
-		lines := core.SplitOutput(core.ZFSMust("list", "-H", "-o", "org.freebsd.iocage:ip4_addr,org.freebsd.iocage:ip6_addr", jail.Path))
+		lines := core.SplitOutput(core.ZFSMust(
+			fmt.Errorf("Error listing jails"),
+			"list", "-H", "-o", "org.freebsd.iocage:ip4_addr,org.freebsd.iocage:ip6_addr", jail.Path))
 		for _, ip_config := range lines[0] {
 			if ip_config == "none" {
 				continue

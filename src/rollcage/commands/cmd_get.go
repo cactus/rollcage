@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"strings"
 
 	"rollcage/core"
@@ -44,7 +45,9 @@ func getCmdRun(cmd *cobra.Command, args []string) {
 			zfsArgs = append(zfsArgs, "-p")
 		}
 		zfsArgs = append(zfsArgs, "all", jail.Path)
-		out := core.ZFSMust(zfsArgs...)
+		out := core.ZFSMust(
+			fmt.Errorf("Error getting properties"),
+			zfsArgs...)
 
 		properties := make([][]string, 0)
 		for _, line := range strings.Split(string(out), "\n") {

@@ -30,7 +30,7 @@ func updateCmdRun(cmd *cobra.Command, args []string) {
 		"get", "-Ho", "value", "org.freebsd.iocage:release,mountpoint",
 		jail.Path}
 	out := strings.Split(
-		strings.TrimSpace(string(core.ZFSMust(zfsArgs...))), "\n")
+		core.ZFSMust(fmt.Errorf("Error getting properties"), zfsArgs...), "\n")
 	release := out[0]
 	mountpoint := out[1]
 
@@ -54,7 +54,9 @@ func updateCmdRun(cmd *cobra.Command, args []string) {
 		fmt.Sprintf(
 			"ioc-update-%s",
 			time.Now().Format("2006-01-02_15:04:05")))
-	core.ZFSMust("snapshot", snappath)
+	core.ZFSMust(
+		fmt.Errorf("Error taking snapshot"),
+		"snapshot", snappath)
 
 	devroot := path.Join(mountpoint, "root/dev")
 	ecmd := exec.Command("/sbin/mount", "-t", "devfs", "devfs", devroot)

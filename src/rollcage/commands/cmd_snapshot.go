@@ -36,7 +36,7 @@ func snapshotCmdRun(cmd *cobra.Command, args []string) {
 		zfsCmd = append(zfsCmd, "-r")
 	}
 	zfsCmd = append(zfsCmd, fmt.Sprintf("%s/root@%s", jail.Path, snapname))
-	core.ZFSMust(zfsCmd...)
+	core.ZFSMust(fmt.Errorf("Error removing snapshot"), zfsCmd...)
 }
 
 func init() {

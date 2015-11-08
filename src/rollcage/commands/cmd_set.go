@@ -70,8 +70,7 @@ func setCmdRun(cmd *cobra.Command, args []string) {
 			fmt.Sprintf("%s%s=%s", prefix, prop[0], prop[1]),
 			jail.Path,
 		}
-		gologit.Debugln(zfsArgs)
-		core.ZFSMust(zfsArgs...)
+		core.ZFSMust(fmt.Errorf("Error setting property"), zfsArgs...)
 	}
 }
 

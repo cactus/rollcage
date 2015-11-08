@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"strings"
@@ -20,13 +19,10 @@ func runtimeCmdRun(cmd *cobra.Command, args []string) {
 
 	out, err := core.Jls("-n", "-j", fmt.Sprintf("ioc-%s", jail.HostUUID))
 	if err != nil {
-		if len(out) == 0 || bytes.Contains(out, []byte("not found")) {
-			gologit.Fatalf("Jail is not running!\n")
-		}
-		gologit.Fatalf("Error: %s\n", err)
+		gologit.Fatalf("Jail is not running!\n")
 	}
 
-	lines := strings.Split(strings.TrimSpace(string(out)), " ")
+	lines := strings.Split(out, " ")
 	for _, line := range lines {
 		fmt.Fprintf(os.Stdout, "%s\n", line)
 	}
