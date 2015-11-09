@@ -31,7 +31,6 @@ func destroyCmdRun(cmd *cobra.Command, args []string) {
 	propertyList := []string{
 		"mountpoint",
 		"org.freebsd.iocage:type",
-		"org.freebsd.iocage:tag",
 	}
 
 	lines := core.SplitOutput(core.ZFSMust(
@@ -43,16 +42,19 @@ func destroyCmdRun(cmd *cobra.Command, args []string) {
 
 	prop_mountpoint := removeDash(lines[0][0])
 	prop_type := removeDash(lines[0][1])
-	prop_tag := removeDash(lines[0][2])
 
 	if prop_type != "thickjail" {
 		gologit.Fatalf("Type is not thickjail.\nI don't know how to handle this yet.\nGiving up!")
 	}
 
-	fmt.Print("Are you sure [yN]? :")
+	fmt.Printf("Ready to remove jail: %s (%s)\n", jail.HostUUID, jail.Tag)
+	fmt.Print("Are you sure [yN]? ")
 	var response string
 	_, err = fmt.Scanln(&response)
 	if err != nil {
+		if err.Error() == "unexpected newline" {
+			os.Exit(0)
+		}
 		gologit.Fatalf("%s", err)
 	}
 
@@ -63,7 +65,7 @@ func destroyCmdRun(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	fmt.Printf("Destroying: %s (%s)\n", jail.HostUUID, prop_tag)
+	fmt.Printf("Destroying: %s (%s)\n", jail.HostUUID, jail.Tag)
 	core.ZFSMust(
 		fmt.Errorf("Error destroying jail"),
 		"destroy", "-fr", jail.Path)
