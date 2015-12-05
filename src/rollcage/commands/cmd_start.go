@@ -191,9 +191,9 @@ func startCmdRun(cmd *cobra.Command, args []string) {
 
 func init() {
 	RootCmd.AddCommand(&cobra.Command{
-		Use:   "stop UUID|TAG",
-		Short: "stop jail",
-		Long:  "Stop jail identified by UUID or TAG.",
+		Use:   "start UUID|TAG",
+		Short: "start jail",
+		Long:  "Start jail identified by UUID or TAG.",
 		Run:   startCmdRun,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
