@@ -79,7 +79,6 @@ func startCmdRun(cmd *cobra.Command, args []string) {
 	}
 
 	// get log dir
-
 	logdir := core.ZFSMust(
 		fmt.Errorf("Error setting property"),
 		"get", "-H", "-o", "value", "mountpoint", core.GetZFSRootPath())
