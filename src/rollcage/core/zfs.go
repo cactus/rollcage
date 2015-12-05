@@ -20,9 +20,10 @@ func (prop ZFSProperties) GetIOC(property string) string {
 }
 
 type JailMeta struct {
-	Path     string
-	HostUUID string
-	Tag      string
+	Path       string
+	Mountpoint string
+	HostUUID   string
+	Tag        string
 }
 
 // return whether the jail is running or not
@@ -70,15 +71,16 @@ func GetAllJails() []*JailMeta {
 	out := ZFSMust(
 		fmt.Errorf("No jails found"),
 		"list", "-H",
-		"-o", "name,org.freebsd.iocage:host_hostuuid,org.freebsd.iocage:tag",
+		"-o", "name,org.freebsd.iocage:host_hostuuid,org.freebsd.iocage:tag,mountpoint",
 		"-d", "1", GetJailsPath())
 	lines := SplitOutput(out)
 	// discard first line, as that is the jail dir itself
 	for _, line := range lines[1:] {
 		list = append(list, &JailMeta{
-			Path:     line[0],
-			HostUUID: line[1],
-			Tag:      line[2],
+			Path:       line[0],
+			HostUUID:   line[1],
+			Tag:        line[2],
+			Mountpoint: line[3],
 		})
 	}
 	return list
@@ -87,7 +89,7 @@ func GetAllJails() []*JailMeta {
 func FindJail(lookup string) (*JailMeta, error) {
 	out, err := ZFS(
 		"list", "-H", "-d", "1",
-		"-o", "name,org.freebsd.iocage:host_hostuuid,org.freebsd.iocage:tag",
+		"-o", "name,org.freebsd.iocage:host_hostuuid,org.freebsd.iocage:tag,mountpoint",
 		GetJailsPath())
 	if err != nil {
 		return nil, err
@@ -96,9 +98,10 @@ func FindJail(lookup string) (*JailMeta, error) {
 	for _, line := range lines {
 		if line[2] == lookup || strings.HasPrefix(line[1], lookup) {
 			return &JailMeta{
-				Path:     line[0],
-				HostUUID: line[1],
-				Tag:      line[2],
+				Path:       line[0],
+				HostUUID:   line[1],
+				Tag:        line[2],
+				Mountpoint: line[3],
 			}, nil
 		}
 	}

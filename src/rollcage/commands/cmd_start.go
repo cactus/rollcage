@@ -38,7 +38,7 @@ func startCmdRun(cmd *cobra.Command, args []string) {
 	// mount procfs
 	if props.GetIOC("mount_procfs") == "1" {
 		fmt.Printf("  + mounting procfs\n")
-		procpath := path.Join(props.Get("mountpoint"), "root/proc")
+		procpath := path.Join(jail.Mountpoint, "root/proc")
 		excmd := exec.Command("/sbin/mount", "-t", "procfs", "proc", procpath)
 		excmd.Env = environ
 		err := excmd.Run()
@@ -124,12 +124,13 @@ func startCmdRun(cmd *cobra.Command, args []string) {
 		fmt.Sprintf("exec.timeout=%s", props.GetIOC("exec_timeout")),
 		fmt.Sprintf("exec.fib=%s", props.GetIOC("exec_fib")),
 		fmt.Sprintf("stop.timeout=%s", props.GetIOC("stop_timeout")),
-		fmt.Sprintf("mount.fstab=%s", path.Join(jail.Path, "fstab")),
+		fmt.Sprintf("mount.fstab=%s", path.Join(jail.Mountpoint, "fstab")),
 		fmt.Sprintf("mount.devfs=%s", props.GetIOC("mount_devfs")),
 		fmt.Sprintf("exec.consolelog=%s", logpath),
 		"allow.dying",
 		"persist",
 	}
+	gologit.Debugln(jailexec)
 	out, err := exec.Command(jailexec[0], jailexec[1:]...).CombinedOutput()
 	gologit.Debugln(string(out))
 	if err != nil {
@@ -158,7 +159,7 @@ func startCmdRun(cmd *cobra.Command, args []string) {
 	// copy resolv conf
 	err = core.CopyFile(
 		"/etc/resolv.conf",
-		path.Join(props.GetIOC("mountpoint"), "root/etc/resolv.conf"))
+		path.Join(jail.Mountpoint, "root/etc/resolv.conf"))
 	if err != nil {
 		gologit.Printf("%s\n", err)
 	}
