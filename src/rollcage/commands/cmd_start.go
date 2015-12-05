@@ -99,7 +99,7 @@ func startCmdRun(cmd *cobra.Command, args []string) {
 		fmt.Sprintf("name=ioc-%s", jail.HostUUID),
 		fmt.Sprintf("host.hostname=%s", props.GetIOC("hostname")),
 		fmt.Sprintf("host.hostuuid=%s", props.GetIOC("host_hostuuid")),
-		fmt.Sprintf("path=%s", path.Join(jail.Path, "root")),
+		fmt.Sprintf("path=%s", path.Join(jail.Mountpoint, "root")),
 		fmt.Sprintf("securelevel=%s", props.GetIOC("securelevel")),
 		fmt.Sprintf("devfs_ruleset=%s", props.GetIOC("devfs_ruleset")),
 		fmt.Sprintf("enforce_statfs=%s", props.GetIOC("enforce_statfs")),
