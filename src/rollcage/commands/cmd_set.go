@@ -24,6 +24,8 @@ var CustomProperties = map[string]bool{
 	"jail_zfs":         true,
 	"jail_zfs_dataset": true,
 	"release":          true,
+	"ip4_addr":         true,
+	"ip6_addr":         true,
 	"hack88":           true,
 	"start":            true,
 }
