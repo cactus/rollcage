@@ -83,17 +83,6 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Printf("* Stopping %s (%s)\n", jail.HostUUID, prop_tag)
-	if prop_prestop != "" {
-		fmt.Printf("  + Running pre-stop\n")
-		preStop := core.SplitFieldsQuoteSafe(prop_prestop)
-		excmd := exec.Command(preStop[0], preStop[1:]...)
-		excmd.Env = environ
-		err := excmd.Run()
-		if err != nil {
-			gologit.Printf("%s\n", err)
-		}
-	}
-
 	fmt.Printf("  + Stopping services\n")
 	jexec := []string{"/usr/sbin/jexec"}
 	jexec = append(jexec, fmt.Sprintf("ioc-%s", jail.HostUUID))
@@ -134,17 +123,6 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 	out, err = exec.Command(jrexec[0], jrexec[1:]...).CombinedOutput()
 	if err != nil {
 		gologit.Printf("%s\n", err)
-	}
-
-	if prop_poststop != "" {
-		fmt.Printf("  + Running post-stop\n")
-		postStop := core.SplitFieldsQuoteSafe(prop_poststop)
-		excmd := exec.Command(postStop[0], postStop[1:]...)
-		excmd.Env = environ
-		err := excmd.Run()
-		if err != nil {
-			gologit.Printf("%s\n", err)
-		}
 	}
 
 	fmt.Printf("  + Tearing down mounts\n")
