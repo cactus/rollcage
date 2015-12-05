@@ -88,7 +88,7 @@ func startCmdRun(cmd *cobra.Command, args []string) {
 	logpath := path.Join(logdir, fmt.Sprintf("%s-console.log", jail.HostUUID))
 
 	// start jail
-	jexec := []string{
+	jailexec := []string{
 		"/usr/sbin/jail", "-c",
 		ip4_addr_propline,
 		fmt.Sprintf("ip4.saddrsel=%s", props.GetIOC("ip4_saddrsel")),
@@ -130,6 +130,11 @@ func startCmdRun(cmd *cobra.Command, args []string) {
 		"allow.dying",
 		"persist",
 	}
+	out, err := exec.Command(jailexec[0], jailexec[1:]...).CombinedOutput()
+	gologit.Debugln(string(out))
+	if err != nil {
+		gologit.Printf("%s\n", err)
+	}
 
 	// rctl_limits?
 	// cpuset?
@@ -151,7 +156,7 @@ func startCmdRun(cmd *cobra.Command, args []string) {
 	}
 
 	// copy resolv conf
-	err := core.CopyFile(
+	err = core.CopyFile(
 		"/etc/resolv.conf",
 		path.Join(props.GetIOC("mountpoint"), "root/etc/resolv.conf"))
 	if err != nil {
@@ -162,13 +167,13 @@ func startCmdRun(cmd *cobra.Command, args []string) {
 	fmt.Printf("  + Starting services\n")
 	jexec := []string{}
 	if props.GetIOC("exec_fib") != "0" {
-		jexec = append(jexec, "/usr/sbin/setfib", execFib)
+		jexec = append(jexec, "/usr/sbin/setfib", props.GetIOC("exec_fib"))
 	}
 
 	jexec = append(jexec, "/usr/sbin/jexec")
 	jexec = append(jexec, fmt.Sprintf("ioc-%s", jail.HostUUID))
 	jexec = append(jexec, core.SplitFieldsQuoteSafe(props.GetIOC("exec_start"))...)
-	out, err := exec.Command(jexec[0], jexec[1:]...).CombinedOutput()
+	out, err = exec.Command(jexec[0], jexec[1:]...).CombinedOutput()
 	gologit.Debugln(string(out))
 	if err != nil {
 		gologit.Printf("%s\n", err)
