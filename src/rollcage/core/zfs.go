@@ -47,7 +47,7 @@ func (jail *JailMeta) GetProperties() ZFSProperties {
 	props := make(ZFSProperties, 0)
 	lines := SplitOutput(ZFSMust(
 		fmt.Errorf("Error listing properties"),
-		"get", "-H", "-o", "property,value", jail.Path))
+		"get", "-H", "-o", "property,value", "all", jail.Path))
 	if len(lines) < 1 {
 		gologit.Fatalf("No output from property fetch\n")
 	}
