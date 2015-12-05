@@ -9,6 +9,16 @@ import (
 	"github.com/cactus/gologit"
 )
 
+type ZFSProperties map[string]string
+
+func (prop *ZFSProperties) Get(property string) string {
+	return prop[property]
+}
+
+func (prop *ZFSProperties) GetIOC(property string) string {
+	return prop[strings.Sprintf("org.freebsd.iocage:%s", property)]
+}
+
 type JailMeta struct {
 	Path     string
 	HostUUID string
@@ -31,6 +41,28 @@ func (jail *JailMeta) GetJID() string {
 		return ""
 	}
 	return string(out)
+}
+
+func (jail *JailMeta) GetProperties() ZFSProperties {
+	props := make(ZFSProperties, 0)
+	lines := core.SplitOutput(core.ZFSMust(
+		fmt.Errorf("Error listing properties"),
+		"get", "-H", "-o", "property,value", jail.Path))
+	if len(lines) < 1 {
+		gologit.Fatalf("No output from property fetch\n")
+	}
+	for _, line := range lines {
+		props[strings.TrimSpace(line[0])] = strings.TrimSpace(line[1])
+	}
+	return props
+}
+
+func (jail *JailMeta) SetProperties(props ZFSProperties) {
+	for key, value := range props {
+		core.ZFSMust(
+			fmt.Errorf("Error setting property"),
+			"set", fmt.Sprintf("%s=%s", key, value), jail.Path)
+	}
 }
 
 func GetAllJails() []*JailMeta {
