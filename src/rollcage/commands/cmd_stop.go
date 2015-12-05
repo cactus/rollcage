@@ -54,11 +54,9 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 
 	fmt.Printf("* Stopping %s (%s)\n", jail.HostUUID, jail.Tag)
 	fmt.Printf("  + Removing jail process\n")
-	jrexec := []string{"/usr/sbin/jail", "-r", fmt.Sprintf("ioc-%s", jail.HostUUID)}
-	out, err := exec.Command(jrexec[0], jrexec[1:]...).CombinedOutput()
-	if err != nil {
-		gologit.Printf("%s\n", err)
-	}
+	core.CmdMust(
+		fmt.Errorf("Error stopping jail!"),
+		"/usr/sbin/jail", "-r", fmt.Sprintf("ioc-%s", jail.HostUUID))
 
 	if props.GetIOC("vnet") == "on" {
 		fmt.Printf("  + Tearing down VNET\n")
