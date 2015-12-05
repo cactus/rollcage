@@ -11,12 +11,12 @@ import (
 
 type ZFSProperties map[string]string
 
-func (prop *ZFSProperties) Get(property string) string {
+func (prop ZFSProperties) Get(property string) string {
 	return prop[property]
 }
 
-func (prop *ZFSProperties) GetIOC(property string) string {
-	return prop[strings.Sprintf("org.freebsd.iocage:%s", property)]
+func (prop ZFSProperties) GetIOC(property string) string {
+	return prop[fmt.Sprintf("org.freebsd.iocage:%s", property)]
 }
 
 type JailMeta struct {
@@ -45,7 +45,7 @@ func (jail *JailMeta) GetJID() string {
 
 func (jail *JailMeta) GetProperties() ZFSProperties {
 	props := make(ZFSProperties, 0)
-	lines := core.SplitOutput(core.ZFSMust(
+	lines := SplitOutput(ZFSMust(
 		fmt.Errorf("Error listing properties"),
 		"get", "-H", "-o", "property,value", jail.Path))
 	if len(lines) < 1 {
@@ -59,7 +59,7 @@ func (jail *JailMeta) GetProperties() ZFSProperties {
 
 func (jail *JailMeta) SetProperties(props ZFSProperties) {
 	for key, value := range props {
-		core.ZFSMust(
+		ZFSMust(
 			fmt.Errorf("Error setting property"),
 			"set", fmt.Sprintf("%s=%s", key, value), jail.Path)
 	}
