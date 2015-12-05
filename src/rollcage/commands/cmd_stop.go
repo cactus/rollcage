@@ -52,17 +52,10 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 
 	props := jail.GetProperties()
 
-	// set a default path
-	/*
-		environ := []string{
-			"PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin",
-		}
-	*/
-
 	fmt.Printf("* Stopping %s (%s)\n", jail.HostUUID, jail.Tag)
 	fmt.Printf("  + Removing jail process\n")
 	jrexec := []string{"/usr/sbin/jail", "-r", fmt.Sprintf("ioc-%s", jail.HostUUID)}
-	out, err = exec.Command(jrexec[0], jrexec[1:]...).CombinedOutput()
+	out, err := exec.Command(jrexec[0], jrexec[1:]...).CombinedOutput()
 	if err != nil {
 		gologit.Printf("%s\n", err)
 	}
