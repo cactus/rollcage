@@ -35,6 +35,7 @@ The current list of supported commands is as follows:
     snaplist    List all snapshots belonging to jail
     snapremove  Remove snapshots belonging to jail
     snapshot    Create a zfs snapshot for jail
+    start       start jail
     stop        stop jail
     update      update a jail to the latest patchlevel
     version     Print the version
