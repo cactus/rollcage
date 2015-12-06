@@ -29,6 +29,8 @@ The current list of supported commands is as follows:
     exec        Execute login to have a shell inside the jail.
     get         get list of properties
     list        List all jails
+    reboot      reboot jail
+    restart     restart jail
     rollback    Rollback jail to a particular snapshot
     runtime     show runtime configuration of a jail
     set         Set a property to a given value
