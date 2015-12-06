@@ -7,7 +7,7 @@ import (
 	"github.com/cactus/gologit"
 )
 
-func restartCmdRun(cmd *cobra.Command, args []string) {
+func rebootCmdRun(cmd *cobra.Command, args []string) {
 	// requires root
 	if !core.IsRoot() {
 		gologit.Fatalf("Must be root to stop\n")
@@ -28,10 +28,10 @@ func restartCmdRun(cmd *cobra.Command, args []string) {
 
 func init() {
 	RootCmd.AddCommand(&cobra.Command{
-		Use:   "restart UUID|TAG",
-		Short: "restart jail",
-		Long:  "Restart jail identified by UUID or TAG.",
-		Run:   restartCmdRun,
+		Use:   "reboot UUID|TAG",
+		Short: "reboot jail",
+		Long:  "Reboot jail identified by UUID or TAG.",
+		Run:   rebootCmdRun,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			if len(args) == 0 {
 				gologit.Fatalln("Required UUID|TAG not provided")
