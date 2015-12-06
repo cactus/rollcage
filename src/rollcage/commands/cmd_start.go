@@ -90,7 +90,7 @@ func startCmdRun(cmd *cobra.Command, args []string) {
 	excmd := exec.Command(
 		"/usr/sbin/jail",
 		"-f", file.Name(),
-		"-c", fmt.Sprintf("name=ioc-%s", jail.HostUUID))
+		"-c", fmt.Sprintf("ioc-%s", jail.HostUUID))
 	excmd.Stdout = logfile
 	excmd.Stderr = logfile
 	err = excmd.Run()
