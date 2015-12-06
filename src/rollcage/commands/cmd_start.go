@@ -72,11 +72,8 @@ func startCmdRun(cmd *cobra.Command, args []string) {
 		gologit.Printf("%s\n", err)
 	}
 
-	// get log dir
-	logpath := path.Join(core.GetLogDir(), fmt.Sprintf("%s-console.log", jail.HostUUID))
-
 	// create log file
-	logfile, err := os.OpenFile(logpath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	logfile, err := os.OpenFile(jail.GetLogPath(), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		gologit.Fatal(err)
 	}

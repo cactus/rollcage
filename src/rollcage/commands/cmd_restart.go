@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"rollcage/core"
 	"time"
 
@@ -27,15 +26,8 @@ func restartCmdRun(cmd *cobra.Command, args []string) {
 		gologit.Fatalf("Jail is not running!\n")
 	}
 
-	// get log dir
-	logdir := core.ZFSMust(
-		fmt.Errorf("Error setting property"),
-		"get", "-H", "-o", "value", "mountpoint",
-		path.Join(core.GetZFSRootPath(), "log"))
-	logpath := path.Join(logdir, fmt.Sprintf("%s-console.log", jail.HostUUID))
-
 	// create file
-	f, err := os.OpenFile(logpath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	f, err := os.OpenFile(jail.GetLogPath(), os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		gologit.Fatal(err)
 	}

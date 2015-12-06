@@ -121,6 +121,10 @@ func (jail *JailMeta) SetProperties(props ZFSProperties) {
 	}
 }
 
+func (jail *JailMeta) GetLogPath() string {
+	return path.Join(GetLogDir(), fmt.Sprintf("%s-console.log", jail.HostUUID))
+}
+
 func (jail *JailMeta) JailConfig() string {
 	props := jail.GetProperties()
 
@@ -134,7 +138,7 @@ func (jail *JailMeta) JailConfig() string {
 		IP6     string
 	}{
 		Props:   props,
-		LogPath: path.Join(GetLogDir(), fmt.Sprintf("%s-console.log", jail.HostUUID)),
+		LogPath: jail.GetLogPath(),
 		UUID:    jail.HostUUID,
 		Root:    path.Join(jail.Mountpoint, "root"),
 		Fstab:   path.Join(jail.Mountpoint, "fstab"),
