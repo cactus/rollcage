@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path"
 	"time"
@@ -78,13 +79,28 @@ func startCmdRun(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	// copy resolv conf
+	err = core.CopyFile(
+		"/etc/resolv.conf",
+		path.Join(jail.Mountpoint, "root/etc/resolv.conf"))
+	if err != nil {
+		gologit.Printf("%s\n", err)
+	}
+
 	// get log dir
 	logdir := core.ZFSMust(
 		fmt.Errorf("Error setting property"),
-		"get", "-H", "-o", "value", "mountpoint", core.GetZFSRootPath())
-	logdir = path.Join(logdir, "log")
-
+		"get", "-H", "-o", "value", "mountpoint",
+		path.Join(core.GetZFSRootPath(), "log"))
 	logpath := path.Join(logdir, fmt.Sprintf("%s-console.log", jail.HostUUID))
+
+	// create file
+	f, err := os.OpenFile(logpath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		gologit.Fatal(err)
+	}
+	f.WriteString("Starting...\n")
+	f.Close()
 
 	// start jail
 	jailexec := []string{
@@ -118,6 +134,7 @@ func startCmdRun(cmd *cobra.Command, args []string) {
 		fmt.Sprintf("exec.prestart=%s", props.GetIOC("prestart")),
 		fmt.Sprintf("exec.poststart=%s", props.GetIOC("poststart")),
 		fmt.Sprintf("exec.prestop=%s", props.GetIOC("prestop")),
+		fmt.Sprintf("exec.start=%s", props.GetIOC("exec_start")),
 		fmt.Sprintf("exec.stop=%s", props.GetIOC("exec_stop")),
 		fmt.Sprintf("exec.clean=%s", props.GetIOC("exec_clean")),
 		fmt.Sprintf("exec.timeout=%s", props.GetIOC("exec_timeout")),
@@ -155,29 +172,23 @@ func startCmdRun(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	// copy resolv conf
-	err = core.CopyFile(
-		"/etc/resolv.conf",
-		path.Join(jail.Mountpoint, "root/etc/resolv.conf"))
-	if err != nil {
-		gologit.Printf("%s\n", err)
-	}
+	/*
+		// start services
+		fmt.Printf("  + Starting services\n")
+		jexec := []string{}
+		if props.GetIOC("exec_fib") != "0" {
+			jexec = append(jexec, "/usr/sbin/setfib", props.GetIOC("exec_fib"))
+		}
 
-	// start services
-	fmt.Printf("  + Starting services\n")
-	jexec := []string{}
-	if props.GetIOC("exec_fib") != "0" {
-		jexec = append(jexec, "/usr/sbin/setfib", props.GetIOC("exec_fib"))
-	}
-
-	jexec = append(jexec, "/usr/sbin/jexec")
-	jexec = append(jexec, fmt.Sprintf("ioc-%s", jail.HostUUID))
-	jexec = append(jexec, core.SplitFieldsQuoteSafe(props.GetIOC("exec_start"))...)
-	out, err = exec.Command(jexec[0], jexec[1:]...).CombinedOutput()
-	gologit.Debugln(string(out))
-	if err != nil {
-		gologit.Printf("%s\n", err)
-	}
+		jexec = append(jexec, "/usr/sbin/jexec")
+		jexec = append(jexec, fmt.Sprintf("ioc-%s", jail.HostUUID))
+		jexec = append(jexec, core.SplitFieldsQuoteSafe(props.GetIOC("exec_start"))...)
+		out, err = exec.Command(jexec[0], jexec[1:]...).CombinedOutput()
+		gologit.Debugln(string(out))
+		if err != nil {
+			gologit.Printf("%s\n", err)
+		}
+	*/
 
 	// set last_started property
 	t := time.Now()
