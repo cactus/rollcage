@@ -19,6 +19,7 @@ func (prop ZFSProperties) GetIOC(property string) string {
 	return prop[fmt.Sprintf("org.freebsd.iocage:%s", property)]
 }
 
+// Misc command helpers
 func ZFS(arg ...string) (string, error) {
 	return Cmd("/sbin/zfs", arg...)
 }
