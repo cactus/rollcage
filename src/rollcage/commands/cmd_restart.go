@@ -39,25 +39,26 @@ func restartCmdRun(cmd *cobra.Command, args []string) {
 	if err != nil {
 		gologit.Fatal(err)
 	}
-	f.WriteString("Starting...\n")
-	f.Close()
+	defer f.Close()
 
 	props := jail.GetProperties()
 
 	jexec := []string{fmt.Sprintf("ioc-%s", jail.HostUUID)}
 
 	jexec_stop := append(jexec, core.SplitFieldsQuoteSafe(props.GetIOC("exec_stop"))...)
-	out, err := exec.Command("/usr/sbin/jexec", jexec_stop...).CombinedOutput()
-	gologit.Debugln(string(out))
-	f.Write(out)
+	excmd := exec.Command("/usr/sbin/jexec", jexec_stop...)
+	excmd.Stdout = f
+	excmd.Stderr = f
+	err = excmd.Run()
 	if err != nil {
 		gologit.Printf("%s\n", err)
 	}
 
 	jexec_start := append(jexec, core.SplitFieldsQuoteSafe(props.GetIOC("exec_start"))...)
-	out, err = exec.Command("/usr/sbin/jexec", jexec_start...).CombinedOutput()
-	gologit.Debugln(string(out))
-	f.Write(out)
+	excmd = exec.Command("/usr/sbin/jexec", jexec_start...)
+	excmd.Stdout = f
+	excmd.Stderr = f
+	err = excmd.Run()
 	if err != nil {
 		gologit.Printf("%s\n", err)
 	}

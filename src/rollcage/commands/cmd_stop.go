@@ -2,6 +2,8 @@ package commands
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 	"os/exec"
 	"path"
 	"strings"
@@ -52,37 +54,43 @@ func stopCmdRun(cmd *cobra.Command, args []string) {
 
 	props := jail.GetProperties()
 
+	// get log dir
+	logdir := core.ZFSMust(
+		fmt.Errorf("Error setting property"),
+		"get", "-H", "-o", "value", "mountpoint",
+		path.Join(core.GetZFSRootPath(), "log"))
+	logpath := path.Join(logdir, fmt.Sprintf("%s-console.log", jail.HostUUID))
+
+	// create file
+	f, err := os.OpenFile(logpath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		gologit.Fatal(err)
+	}
+	defer f.Close()
+
 	fmt.Printf("* Stopping %s (%s)\n", jail.HostUUID, jail.Tag)
 	fmt.Printf("  + Removing jail process\n")
-	core.CmdMust(
-		fmt.Errorf("Error stopping jail!"),
-		"/usr/sbin/jail", "-r", fmt.Sprintf("ioc-%s", jail.HostUUID))
 
-	if props.GetIOC("vnet") == "on" {
-		fmt.Printf("  + Tearing down VNET\n")
-		// stop VNET networking
-	} else if props.GetIOC("ip4") != "inherit" {
-		// stop standard networking (legacy?)
-		lines := core.SplitOutput(core.ZFSMust(
-			fmt.Errorf("Error listing jails"),
-			"list", "-H", "-o", "org.freebsd.iocage:ip4_addr,org.freebsd.iocage:ip6_addr", jail.Path))
-		for _, ip_config := range lines[0] {
-			if ip_config == "none" {
-				continue
-			}
-			for _, addr := range strings.Split(ip_config, ",") {
-				item := strings.Split(addr, "|")
-				gologit.Debugln("/sbin/ifconfig", item[0], item[1], "-alias")
-				out, err := exec.Command("/sbin/ifconfig",
-					item[0], item[1], "-alias").CombinedOutput()
-				gologit.Debugln(string(out))
-				if err != nil {
-					gologit.Printf("%s\n", err)
-				}
-			}
-		}
+	file, err := ioutil.TempFile(os.TempDir(), "rollcage.")
+	defer os.Remove(file.Name())
+
+	jailConfig := jail.JailConfig()
+	gologit.Debugln(jailConfig)
+	file.WriteString(jailConfig)
+	file.Close()
+
+	excmd := exec.Command(
+		"/usr/sbin/jail",
+		"-f", file.Name(),
+		"-r", fmt.Sprintf("ioc-%s", jail.HostUUID))
+	excmd.Stdout = f
+	excmd.Stderr = f
+	err = excmd.Run()
+	if err != nil {
+		gologit.Fatal(err)
 	}
 
+	// mostly for safety...
 	fmt.Printf("  + Tearing down mounts\n")
 	umountCmd("-afvF", path.Join(jail.Mountpoint, "fstab"))
 	umountCmd(path.Join(jail.Mountpoint, "root/dev/fd"))

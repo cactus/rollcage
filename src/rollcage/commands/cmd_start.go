@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -63,22 +64,6 @@ func startCmdRun(cmd *cobra.Command, args []string) {
 			path.Join(core.GetZFSRootPath(), props.GetIOC("jail_zfs_dataset")))
 	}
 
-	// bring up networking (vnet or legacy)
-	ip4_addr_propline := "ip4.addr="
-	ip6_addr_propline := "ip6.addr="
-	if props.GetIOC("vnet") == "on" {
-		fmt.Printf("  + Configuring VNET\n")
-		// start VNET networking
-	} else {
-		// start standard networking (legacy?)
-		if props.GetIOC("ip4_addr") != "none" {
-			ip4_addr_propline += props.GetIOC("ip4_addr")
-		}
-		if props.GetIOC("ip6_addr") != "none" {
-			ip6_addr_propline += props.GetIOC("ip6_addr")
-		}
-	}
-
 	// copy resolv conf
 	err = core.CopyFile(
 		"/etc/resolv.conf",
@@ -88,69 +73,32 @@ func startCmdRun(cmd *cobra.Command, args []string) {
 	}
 
 	// get log dir
-	logdir := core.ZFSMust(
-		fmt.Errorf("Error setting property"),
-		"get", "-H", "-o", "value", "mountpoint",
-		path.Join(core.GetZFSRootPath(), "log"))
-	logpath := path.Join(logdir, fmt.Sprintf("%s-console.log", jail.HostUUID))
+	logpath := path.Join(core.GetLogDir(), fmt.Sprintf("%s-console.log", jail.HostUUID))
 
-	// create file
-	f, err := os.OpenFile(logpath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	// create log file
+	logfile, err := os.OpenFile(logpath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
 	if err != nil {
 		gologit.Fatal(err)
 	}
-	f.WriteString("Starting...\n")
-	f.Close()
+	defer logfile.Close()
 
-	// start jail
-	jailexec := []string{
-		"/usr/sbin/jail", "-c",
-		ip4_addr_propline,
-		fmt.Sprintf("ip4.saddrsel=%s", props.GetIOC("ip4_saddrsel")),
-		fmt.Sprintf("ip4=%s", props.GetIOC("ip4")),
-		ip6_addr_propline,
-		fmt.Sprintf("ip6.saddrsel=%s", props.GetIOC("ip6_saddrsel")),
-		fmt.Sprintf("ip6=%s", props.GetIOC("ip6")),
-		fmt.Sprintf("name=ioc-%s", jail.HostUUID),
-		fmt.Sprintf("host.hostname=%s", props.GetIOC("hostname")),
-		fmt.Sprintf("host.hostuuid=%s", props.GetIOC("host_hostuuid")),
-		fmt.Sprintf("path=%s", path.Join(jail.Mountpoint, "root")),
-		fmt.Sprintf("securelevel=%s", props.GetIOC("securelevel")),
-		fmt.Sprintf("devfs_ruleset=%s", props.GetIOC("devfs_ruleset")),
-		fmt.Sprintf("enforce_statfs=%s", props.GetIOC("enforce_statfs")),
-		fmt.Sprintf("children.max=%s", props.GetIOC("children_max")),
-		fmt.Sprintf("allow.set_hostname=%s", props.GetIOC("allow_set_hostname")),
-		fmt.Sprintf("allow.sysvipc=%s", props.GetIOC("allow_sysvipc")),
-		fmt.Sprintf("allow.chflags=%s", props.GetIOC("allow_chflags")),
-		fmt.Sprintf("allow.mount=%s", props.GetIOC("allow_mount")),
-		fmt.Sprintf("allow.mount.devfs=%s", props.GetIOC("allow_mount_devfs")),
-		fmt.Sprintf("allow.mount.nullfs=%s", props.GetIOC("allow_mount_nullfs")),
-		fmt.Sprintf("allow.mount.procfs=%s", props.GetIOC("allow_mount_procfs")),
-		fmt.Sprintf("allow.mount.tmpfs=%s", props.GetIOC("allow_mount_tmpfs")),
-		fmt.Sprintf("allow.mount.zfs=%s", props.GetIOC("allow_mount_zfs")),
-		fmt.Sprintf("mount.fdescfs=%s", props.GetIOC("mount_fdescfs")),
-		fmt.Sprintf("allow.quotas=%s", props.GetIOC("allow_quotas")),
-		fmt.Sprintf("allow.socket_af=%s", props.GetIOC("allow_socket_af")),
-		fmt.Sprintf("exec.prestart=%s", props.GetIOC("prestart")),
-		fmt.Sprintf("exec.poststart=%s", props.GetIOC("poststart")),
-		fmt.Sprintf("exec.prestop=%s", props.GetIOC("prestop")),
-		fmt.Sprintf("exec.start=%s", props.GetIOC("exec_start")),
-		fmt.Sprintf("exec.stop=%s", props.GetIOC("exec_stop")),
-		fmt.Sprintf("exec.clean=%s", props.GetIOC("exec_clean")),
-		fmt.Sprintf("exec.timeout=%s", props.GetIOC("exec_timeout")),
-		fmt.Sprintf("exec.fib=%s", props.GetIOC("exec_fib")),
-		fmt.Sprintf("stop.timeout=%s", props.GetIOC("stop_timeout")),
-		fmt.Sprintf("mount.fstab=%s", path.Join(jail.Mountpoint, "fstab")),
-		fmt.Sprintf("mount.devfs=%s", props.GetIOC("mount_devfs")),
-		fmt.Sprintf("exec.consolelog=%s", logpath),
-		"allow.dying",
-		"persist",
-	}
-	gologit.Debugln(jailexec)
-	out, err := exec.Command(jailexec[0], jailexec[1:]...).CombinedOutput()
-	gologit.Debugln(string(out))
+	file, err := ioutil.TempFile(os.TempDir(), "rollcage.")
+	defer os.Remove(file.Name())
+
+	jailConfig := jail.JailConfig()
+	gologit.Debugln(jailConfig)
+	file.WriteString(jailConfig)
+	file.Close()
+
+	excmd := exec.Command(
+		"/usr/sbin/jail",
+		"-f", file.Name(),
+		"-c", fmt.Sprintf("ioc-%s", jail.HostUUID))
+	excmd.Stdout = logfile
+	excmd.Stderr = logfile
+	err = excmd.Run()
 	if err != nil {
-		gologit.Printf("%s\n", err)
+		gologit.Fatal(err)
 	}
 
 	// rctl_limits?
@@ -171,24 +119,6 @@ func startCmdRun(cmd *cobra.Command, args []string) {
 			gologit.Printf("%s\n", err)
 		}
 	}
-
-	/*
-		// start services
-		fmt.Printf("  + Starting services\n")
-		jexec := []string{}
-		if props.GetIOC("exec_fib") != "0" {
-			jexec = append(jexec, "/usr/sbin/setfib", props.GetIOC("exec_fib"))
-		}
-
-		jexec = append(jexec, "/usr/sbin/jexec")
-		jexec = append(jexec, fmt.Sprintf("ioc-%s", jail.HostUUID))
-		jexec = append(jexec, core.SplitFieldsQuoteSafe(props.GetIOC("exec_start"))...)
-		out, err = exec.Command(jexec[0], jexec[1:]...).CombinedOutput()
-		gologit.Debugln(string(out))
-		if err != nil {
-			gologit.Printf("%s\n", err)
-		}
-	*/
 
 	// set last_started property
 	t := time.Now()

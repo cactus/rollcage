@@ -2,7 +2,9 @@ package core
 
 import (
 	"bytes"
+	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 
 	"github.com/cactus/gologit"
@@ -40,6 +42,18 @@ func LoadConfig(filepath string) {
 
 func GetZFSRootPath() string {
 	return Config.Main.ZFSRoot
+}
+
+var logDir = ""
+
+func GetLogDir() string {
+	if logDir == "" {
+		logDir = ZFSMust(
+			fmt.Errorf("Error setting property"),
+			"get", "-H", "-o", "value", "mountpoint",
+			path.Join(GetZFSRootPath(), "log"))
+	}
+	return logDir
 }
 
 func GetJailsPath() string {
