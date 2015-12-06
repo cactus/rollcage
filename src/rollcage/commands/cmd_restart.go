@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"fmt"
-
 	"rollcage/core"
 
 	"github.com/cactus/cobra"
@@ -24,10 +22,8 @@ func restartCmdRun(cmd *cobra.Command, args []string) {
 		gologit.Fatalf("Jail is not running!\n")
 	}
 
-	fmt.Printf("* Restarting %s (%s)\n", jail.HostUUID, jail.Tag)
-	core.CmdMust(
-		fmt.Errorf("Error restarting jail!"),
-		"/usr/sbin/jail", "-rc", fmt.Sprintf("ioc-%s", jail.HostUUID))
+	stopCmdRun(cmd, args)
+	startCmdRun(cmd, args)
 }
 
 func init() {
