@@ -48,17 +48,17 @@ func destroyCmdRun(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Printf("Ready to remove jail: %s (%s)\n", jail.HostUUID, jail.Tag)
-	fmt.Print("Are you sure [yN]? ")
-	var response string
-	_, err = fmt.Scanln(&response)
-	if err != nil {
-		if err.Error() == "unexpected newline" {
-			os.Exit(0)
-		}
-		gologit.Fatalf("%s", err)
-	}
-
 	if !force {
+		fmt.Print("Are you sure [yN]? ")
+		var response string
+		_, err = fmt.Scanln(&response)
+		if err != nil {
+			if err.Error() == "unexpected newline" {
+				os.Exit(0)
+			}
+			gologit.Fatalf("%s", err)
+		}
+
 		response = strings.ToLower(strings.TrimSpace(response))
 		if len(response) != 1 || response[0] != 'y' {
 			return
