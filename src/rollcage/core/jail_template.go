@@ -11,10 +11,10 @@ import (
 var jailConfigTemplate = template.Must(template.New("jail.conf").Parse(`
 ioc-{{ .UUID }} {
     ip4="{{ .Props.GetIOC "ip4" }}";
-    ip4.addr={{ .IP4 }};
+    ip4.addr={{range $index, $elem := .IP4 }}{{if $index}}, {{end}}"{{$elem}}"{{ else }}""{{ end }};
     ip4.saddrsel="{{ .Props.GetIOC "ip4_saddrsel" }}";
     ip6="{{ .Props.GetIOC "ip6" }}";
-    ip6.addr={{ .IP6 }};
+    ip6.addr={{range $index, $elem := .IP6 }}{{if $index}}, {{end}}"{{$elem}}"{{ else }}""{{ end }};
     ip6.saddrsel="{{ .Props.GetIOC "ip6_saddrsel" }}";
     host.hostname="{{ .Props.GetIOC "hostname" }}";
     host.hostuuid="{{ .Props.GetIOC "host_hostuuid" }}";
@@ -64,8 +64,8 @@ func (jail *JailMeta) JailConfig() string {
 		Fstab   string
 		Root    string
 		UUID    string
-		IP4     string
-		IP6     string
+		IP4     []string
+		IP6     []string
 	}{
 		Props:   props,
 		LogPath: jail.GetLogPath(),
@@ -80,29 +80,27 @@ func (jail *JailMeta) JailConfig() string {
 	} else {
 		// start standard networking (legacy?)
 		if props.GetIOC("ip4_addr") != "none" {
-			data.IP4 = props.GetIOC("ip4_addr")
+			ip4 := props.GetIOC("ip4_addr")
+			if ip4 != "" {
+				ns := []string{}
+				s := strings.Split(ip4, ",")
+				for _, x := range s {
+					ns = append(ns, strings.TrimSpace(x))
+				}
+				data.IP4 = ns
+			}
 		}
 		if props.GetIOC("ip6_addr") != "none" {
-			data.IP6 = props.GetIOC("ip6_addr")
+			ip6 := props.GetIOC("ip6_addr")
+			if ip6 != "" {
+				ns := []string{}
+				s := strings.Split(ip6, ",")
+				for _, x := range s {
+					ns = append(ns, strings.TrimSpace(x))
+				}
+				data.IP6 = ns
+			}
 		}
-	}
-
-	if data.IP4 != "" {
-		ns := []string{}
-		s := strings.Split(data.IP4, ",")
-		for _, x := range s {
-			ns = append(ns, strings.TrimSpace(x))
-		}
-		data.IP4 = strings.Join(ns, ", ")
-	}
-
-	if data.IP6 != "" {
-		ns := []string{}
-		s := strings.Split(data.IP6, ",")
-		for _, x := range s {
-			ns = append(ns, strings.TrimSpace(x))
-		}
-		data.IP6 = strings.Join(ns, ", ")
 	}
 
 	b := &bytes.Buffer{}
