@@ -18,7 +18,7 @@ import (
 func updateCmdRun(cmd *cobra.Command, args []string) {
 	// requires root
 	if !core.IsRoot() {
-		gologit.Fatalf("Must be root to snapremove\n")
+		gologit.Fatalf("Must be root to update\n")
 	}
 
 	jail, err := core.FindJail(args[0])
