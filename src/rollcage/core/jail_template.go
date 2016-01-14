@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"path"
+	"strings"
 	"text/template"
 )
 
@@ -84,6 +85,24 @@ func (jail *JailMeta) JailConfig() string {
 		if props.GetIOC("ip6_addr") != "none" {
 			data.IP6 = props.GetIOC("ip6_addr")
 		}
+	}
+
+	if data.IP4 != "" {
+		ns := []string{}
+		s := strings.Split(data.IP4, ",")
+		for _, x := range s {
+			ns = append(ns, strings.TrimSpace(x))
+		}
+		data.IP4 = strings.Join(ns, ", ")
+	}
+
+	if data.IP6 != "" {
+		ns := []string{}
+		s := strings.Split(data.IP6, ",")
+		for _, x := range s {
+			ns = append(ns, strings.TrimSpace(x))
+		}
+		data.IP6 = strings.Join(ns, ", ")
 	}
 
 	b := &bytes.Buffer{}
