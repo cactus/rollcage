@@ -10,10 +10,10 @@ import (
 var jailConfigTemplate = template.Must(template.New("jail.conf").Parse(`
 ioc-{{ .UUID }} {
     ip4="{{ .Props.GetIOC "ip4" }}";
-    ip4.addr="{{ .IP4 }}";
+    ip4.addr={{ .IP4 }};
     ip4.saddrsel="{{ .Props.GetIOC "ip4_saddrsel" }}";
     ip6="{{ .Props.GetIOC "ip6" }}";
-    ip6.addr="{{ .IP6 }}";
+    ip6.addr={{ .IP6 }};
     ip6.saddrsel="{{ .Props.GetIOC "ip6_saddrsel" }}";
     host.hostname="{{ .Props.GetIOC "hostname" }}";
     host.hostuuid="{{ .Props.GetIOC "host_hostuuid" }}";
