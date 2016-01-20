@@ -15,8 +15,20 @@ focus on "thickjails".
 
 Create a config file at `/usr/local/etc/rollcage.conf`:
 
-    # zfsroot is the location of the zfs dataset where rollcage lives
+    # zfsroot is the location of the zfs dataset where jails live
     zfsroot = "tank/iocage"
+
+Example layout:
+
+    $ zfs list -r -d 1 tank/iocage
+    NAME                   USED  AVAIL  REFER  MOUNTPOINT
+    tank/iocage            9.01G   436G   112K  /iocage
+    tank/iocage/.defaults    96K   436G    96K  /iocage/.defaults
+    tank/iocage/download     96K   436G    96K  /iocage/download
+    tank/iocage/jails      8.74G   436G    96K  /iocage/jails
+    tank/iocage/log         128K   436G   128K  /iocage/log
+    tank/iocage/releases    276M   436G    96K  /iocage/releases
+    
 
 ## Commands
 

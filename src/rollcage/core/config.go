@@ -59,3 +59,7 @@ func GetLogDir() string {
 func GetJailsPath() string {
 	return filepath.Join(GetZFSRootPath(), "jails")
 }
+
+func GetReleasesPath() string {
+	return filepath.Join(GetZFSRootPath(), "releases")
+}
