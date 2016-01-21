@@ -42,6 +42,7 @@ The current list of supported commands is as follows:
     get         get list of properties
     list        List all jails
     reboot      reboot jail
+    release     Operations for listing and fetching releases
     restart     restart jail
     rollback    Rollback jail to a particular snapshot
     runtime     show runtime configuration of a jail
