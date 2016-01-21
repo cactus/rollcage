@@ -2,10 +2,13 @@ package commands
 
 import (
 	"fmt"
+	"os"
+	"strings"
 
 	"rollcage/core"
 
 	"github.com/cactus/cobra"
+	"github.com/cactus/gologit"
 )
 
 func releaseListCmdRun(cmd *cobra.Command, args []string) {
@@ -13,14 +16,45 @@ func releaseListCmdRun(cmd *cobra.Command, args []string) {
 
 	wf := core.NewOutputWriter([]string{"name"}, MachineOutput)
 	for _, release := range releases {
-		/*
-			        if strings.HasPrefix(line, "-") {
-						continue
-					}
-		*/
 		fmt.Fprintf(wf, "%s\n", release.Name)
 	}
 	wf.Flush()
+}
+
+func releaseDestroyCmdRun(cmd *cobra.Command, args []string) {
+	// requires root
+	if !core.IsRoot() {
+		gologit.Fatalf("Must be root to destroy\n")
+	}
+
+	release, err := core.FindRelease(args[0])
+	if err != nil {
+		gologit.Fatalf("Release '%s' not found!\n", args[0])
+	}
+
+	fmt.Printf("Ready to remove release: %s\n", release.Name)
+	if !force {
+		fmt.Print("Are you sure [yN]? ")
+		var response string
+		_, err = fmt.Scanln(&response)
+		if err != nil {
+			if err.Error() == "unexpected newline" {
+				os.Exit(0)
+			}
+			gologit.Fatalf("%s", err)
+		}
+
+		response = strings.ToLower(strings.TrimSpace(response))
+		if len(response) != 1 || response[0] != 'y' {
+			return
+		}
+	}
+
+	fmt.Printf("Destroying: %s\n", release.Name)
+	core.ZFSMust(
+		fmt.Errorf("Error destroying release"),
+		"destroy", "-fr", release.Path)
+	os.RemoveAll(release.Mountpoint)
 }
 
 func init() {
@@ -33,6 +67,17 @@ func init() {
 		Use:   "list",
 		Short: "List all releases",
 		Run:   releaseListCmdRun,
+	})
+
+	ReleaseCmd.AddCommand(&cobra.Command{
+		Use:   "destroy RELEASE",
+		Short: "Remove a release",
+		Run:   releaseDestroyCmdRun,
+		PreRun: func(cmd *cobra.Command, args []string) {
+			if len(args) == 0 {
+				gologit.Fatalln("Required RELEASE not provided")
+			}
+		},
 	})
 
 	RootCmd.AddCommand(ReleaseCmd)
