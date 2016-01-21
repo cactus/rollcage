@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"os/exec"
 	"path"
 	"strings"
 
@@ -86,13 +87,8 @@ func releaseFetchCmdRun(cmd *cobra.Command, args []string) {
 		gologit.Fatalf("Release '%s' is not currently supported\n", releaseName)
 	}
 
-	release, err := core.FindRelease(args[0])
-	if err == nil {
-		gologit.Fatalf("Release '%s' already exists!\n", release.Name)
-	}
-
 	// get some meta
-	release, err = core.CreateRelease(releaseName)
+	release, err := core.CreateRelease(releaseName)
 	if err != nil {
 		gologit.Fatalf("Couldn't create release '%s'\n", releaseName)
 	}
@@ -106,13 +102,15 @@ func releaseFetchCmdRun(cmd *cobra.Command, args []string) {
 		gologit.Fatalf("error parsing internal sets fetch url\n")
 	}
 	u.Path = mirrorDir
-	fmt.Printf("Fetching sets\n")
+	fmt.Printf("Fetching sets:\n")
+	tarset := []string{}
 	for _, setname := range strings.Split(fetchSets, " ") {
 		ux := *u
 		ux.Path = path.Join(ux.Path, release.Name, setname)
 		destPth := path.Join(release.Mountpoint, "sets", setname)
+		tarset = append(tarset, destPth)
 		if _, err := os.Stat(destPth); !os.IsNotExist(err) {
-			fmt.Printf("'%s' already present. Skipping download.\n", setname)
+			fmt.Printf("'%s' already present -- skipping download\n", setname)
 			continue
 		}
 		err := core.FetchHTTPFile(ux.String(), destPth, true)
@@ -120,6 +118,31 @@ func releaseFetchCmdRun(cmd *cobra.Command, args []string) {
 			gologit.Fatalf("Failed to fetch: %s\n", ux.String())
 		}
 	}
+
+	fmt.Printf("Extracting sets:\n")
+	for _, pth := range tarset {
+		basepth := path.Base(pth)
+		fmt.Printf("* %s\n", basepth)
+		excmd := exec.Command(
+			"tar", "-C", path.Join(release.Mountpoint, "root"),
+			"-xf", pth)
+		excmd.Stdout = os.Stdout
+		excmd.Stderr = os.Stdout
+		err := excmd.Run()
+		if err != nil {
+			gologit.Debugf("Error: %s\n", err)
+			gologit.Fatalf("Failed to extract: %s\n", basepth)
+		}
+	}
+	err = os.MkdirAll(path.Join(release.Mountpoint, "root", "usr/home"), 0755)
+	if err != nil {
+		gologit.Fatalf("Failed to make: %s\n", "/usr/home")
+	}
+	err = os.MkdirAll(path.Join(release.Mountpoint, "root", "usr/ports"), 0755)
+	if err != nil {
+		gologit.Fatalf("Failed to make: %s\n", "/usr/ports")
+	}
+
 }
 
 func init() {

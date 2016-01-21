@@ -84,17 +84,22 @@ func FindRelease(lookup string) (*ReleaseMeta, error) {
 func CreateRelease(relname string) (*ReleaseMeta, error) {
 	releaseName := strings.ToUpper(relname)
 
+	release, _ := FindRelease(relname)
+	if release != nil {
+		return release, nil
+	}
+
 	// create zfs
 	basepath := path.Join(GetReleasesPath(), releaseName)
 	rootpath := path.Join(basepath, "root")
 	setspath := path.Join(basepath, "sets")
 
-	_, err := ZFS("create", "-p", rootpath)
+	_, err := ZFS("create", "-o", "compression=lz4", "-p", rootpath)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating release zfs filesystem")
 	}
 
-	_, err = ZFS("create", "-p", setspath)
+	_, err = ZFS("create", "-o", "compression=off", "-p", setspath)
 	if err != nil {
 		return nil, fmt.Errorf("Error creating release sets zfs filesystem")
 	}
@@ -103,7 +108,7 @@ func CreateRelease(relname string) (*ReleaseMeta, error) {
 		fmt.Errorf("Error getting property in create release"),
 		"get", "-H", "-o", "value", "mountpoint", basepath)
 
-	release := &ReleaseMeta{
+	release = &ReleaseMeta{
 		Name:       releaseName,
 		Path:       basepath,
 		Mountpoint: baseMountPoint,
