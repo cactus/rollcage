@@ -67,7 +67,7 @@ var hostUser, jailUser string
 func init() {
 	cmd := &cobra.Command{
 		Use:   "exec [-u username] [-U username] UUID|TAG COMMAND",
-		Short: "Execute login to have a shell inside the jail.",
+		Short: "Execute command inside the jail.",
 		Run:   execCmdRun,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			if hostUser != "" && jailUser != "" {

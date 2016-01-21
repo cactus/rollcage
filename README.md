@@ -38,7 +38,7 @@ The current list of supported commands is as follows:
     console     Execute login to have a shell inside the jail.
     destroy     destroy jail
     df          List disk space related information
-    exec        Execute login to have a shell inside the jail.
+    exec        Execute command inside the jail
     get         get list of properties
     list        List all jails
     reboot      reboot jail
