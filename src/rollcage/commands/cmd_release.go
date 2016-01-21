@@ -197,9 +197,13 @@ func releaseUpdateCmdRun(cmd *cobra.Command, args []string) {
 	}
 	exargs = append(exargs, "fetch", "install")
 	ecmd = exec.Command("/usr/sbin/chroot", exargs...)
+	unamer := release.Name
+	if release.Patchlevel != "" {
+		unamer = release.Patchlevel
+	}
 	ecmd.Env = []string{
 		"PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin",
-		fmt.Sprintf("UNAME_r=%s", release.Name),
+		fmt.Sprintf("UNAME_r=%s", unamer),
 		"PAGER=/bin/cat",
 	}
 	gologit.Debugln(ecmd.Args)
