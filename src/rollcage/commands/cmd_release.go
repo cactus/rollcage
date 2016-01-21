@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"os/exec"
@@ -142,7 +143,71 @@ func releaseFetchCmdRun(cmd *cobra.Command, args []string) {
 	if err != nil {
 		gologit.Fatalf("Failed to make: %s\n", "/usr/ports")
 	}
+}
 
+func releaseUpdateCmdRun(cmd *cobra.Command, args []string) {
+	// requires root
+	if !core.IsRoot() {
+		gologit.Fatalf("Must be root to update\n")
+	}
+
+	release, err := core.FindRelease(args[0])
+	if err != nil {
+		gologit.Fatalf("Release '%s' not found!\n", args[0])
+	}
+
+	mountpoint := release.Mountpoint
+	resolvconf := path.Join(mountpoint, "root/etc/resolv.conf")
+	if _, err := os.Stat(resolvconf); os.IsNotExist(err) {
+		data, err := ioutil.ReadFile("/etc/resolv.conf")
+		if err != nil {
+			gologit.Fatalln("/etc/resolv.conf not present or not readable")
+		}
+
+		err = ioutil.WriteFile(resolvconf, data, 0755)
+		if err != nil {
+			gologit.Fatalf("Could not copy contents to '%s'\n", resolvconf)
+		}
+	}
+
+	devroot := path.Join(mountpoint, "root/dev")
+	ecmd := exec.Command("/sbin/mount", "-t", "devfs", "devfs", devroot)
+	gologit.Debugln(ecmd.Args)
+	eout, err := ecmd.CombinedOutput()
+	if err != nil {
+		gologit.Fatalf("Error mounting devfs: %s\n", err)
+	}
+	gologit.Debugln(string(eout))
+
+	defer func() {
+		ecmd := exec.Command("/sbin/umount", devroot)
+		gologit.Debugln(ecmd.Args)
+		err := ecmd.Run()
+		if err != nil {
+			gologit.Fatalf("Error unmounting devfs: %s\n", err)
+		}
+	}()
+
+	fmt.Println("* Updating release...")
+	root := path.Join(mountpoint, "root")
+
+	exargs := []string{root, "/usr/sbin/freebsd-update"}
+	if release.Name != "9.3-RELEASE" && release.Name != "10.1-RELEASE" {
+		exargs = append(exargs, "--not-running-from-cron")
+	}
+	exargs = append(exargs, "fetch", "install")
+	ecmd = exec.Command("/usr/sbin/chroot", exargs...)
+	ecmd.Env = []string{
+		"PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin",
+		fmt.Sprintf("UNAME_r=%s", release.Name),
+		"PAGER=/bin/cat",
+	}
+	gologit.Debugln(ecmd.Args)
+	ecmd.Stdout = os.Stdout
+	ecmd.Stderr = os.Stderr
+	ecmd.Stdin = os.Stdin
+	ecmd.Run()
+	fmt.Println("* update finished")
 }
 
 func init() {
@@ -178,14 +243,29 @@ func init() {
 			}
 		},
 	}
+
 	fetchCommand.Flags().StringVarP(
-		&mirrorHost, "mirror-host", "", "ftp.freebsd.org", "set mirror hostname")
+		&mirrorHost, "mirror-host", "", "ftp.freebsd.org",
+		"set mirror hostname")
 	fetchCommand.Flags().StringVarP(
-		&mirrorDir, "mirror-dir", "", "/pub/FreeBSD/releases/amd64/amd64/", "set mirror hostname")
+		&mirrorDir, "mirror-dir", "", "/pub/FreeBSD/releases/amd64/amd64/",
+		"set mirror hostname")
 	fetchCommand.Flags().StringVarP(
 		&fetchSets, "sets", "s", "base.txz doc.txz lib32.txz src.txz",
 		"sets to fetch for a release")
 
 	ReleaseCmd.AddCommand(fetchCommand)
+
+	ReleaseCmd.AddCommand(&cobra.Command{
+		Use:   "update RELEASE",
+		Short: "Update a release to most recent patchset",
+		Run:   releaseUpdateCmdRun,
+		PreRun: func(cmd *cobra.Command, args []string) {
+			if len(args) == 0 {
+				gologit.Fatalln("Required RELEASE not provided")
+			}
+		},
+	})
+
 	RootCmd.AddCommand(ReleaseCmd)
 }
