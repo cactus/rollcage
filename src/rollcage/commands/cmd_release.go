@@ -14,11 +14,29 @@ import (
 func releaseListCmdRun(cmd *cobra.Command, args []string) {
 	releases := core.GetAllReleases()
 
-	wf := core.NewOutputWriter([]string{"name"}, MachineOutput)
+	wf := core.NewOutputWriter([]string{"name", "patchlevel"}, MachineOutput)
 	for _, release := range releases {
-		fmt.Fprintf(wf, "%s\n", release.Name)
+		fmt.Fprintf(wf, "%s\t%s\n", release.Name, release.Patchlevel)
 	}
 	wf.Flush()
+}
+
+func releaseFetchCmdRun(cmd *cobra.Command, args []string) {
+	// requires root
+	if !core.IsRoot() {
+		gologit.Fatalf("Must be root to fetch\n")
+	}
+
+	/*
+		release, err := core.FindRelease(args[0])
+		if err == nil {
+			gologit.Fatalf("Release '%s' already exists!\n", args[0])
+		}
+	*/
+
+	// create
+	// fetch
+	// update?
 }
 
 func releaseDestroyCmdRun(cmd *cobra.Command, args []string) {

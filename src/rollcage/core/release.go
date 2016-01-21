@@ -2,6 +2,8 @@ package core
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
 	"path"
 	"strings"
 )
@@ -10,6 +12,7 @@ type ReleaseMeta struct {
 	Path       string
 	Mountpoint string
 	Name       string
+	Patchlevel string
 }
 
 func GetAllReleases() []*ReleaseMeta {
@@ -22,10 +25,19 @@ func GetAllReleases() []*ReleaseMeta {
 	lines := SplitOutput(out)
 	// discard first line, as that is the jail dir itself
 	for _, line := range lines[1:] {
+		patchlevel := ""
+		fpath := path.Join(line[1], "root/bin/freebsd-version")
+		if _, err := os.Stat(fpath); !os.IsNotExist(err) {
+			out, err := exec.Command(fpath).Output()
+			if err == nil && len(out) > 0 {
+				patchlevel = strings.TrimSpace(string(out))
+			}
+		}
 		list = append(list, &ReleaseMeta{
 			Path:       line[0],
 			Mountpoint: line[1],
 			Name:       path.Base(line[1]),
+			Patchlevel: patchlevel,
 		})
 	}
 	return list
